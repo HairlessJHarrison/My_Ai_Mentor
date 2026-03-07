@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+/* ── Unplugged Design Tokens ── */
+@theme {
+  --color-forest-50: #f0faf4;
+  --color-forest-100: #d4f0de;
+  --color-forest-200: #a8e1bd;
+  --color-forest-300: #6dca94;
+  --color-forest-400: #3db06f;
+  --color-forest-500: #2a8c56;
+  --color-forest-600: #1f6f43;
+  --color-forest-700: #195836;
+  --color-forest-800: #16472d;
+  --color-forest-900: #133a26;
+
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-200: #fde68a;
+  --color-amber-300: #fcd34d;
+  --color-amber-400: #fbbf24;
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #d97706;
+  --color-amber-700: #b45309;
+
+  --color-ocean-50: #f0f7ff;
+  --color-ocean-100: #d4e9ff;
+  --color-ocean-200: #a8d3ff;
+  --color-ocean-300: #6db8ff;
+  --color-ocean-400: #3d9eff;
+  --color-ocean-500: #1a7ef5;
+  --color-ocean-600: #1264cc;
+  --color-ocean-700: #0e4d9e;
+
+  --color-surface-900: #0f1419;
+  --color-surface-800: #1a2028;
+  --color-surface-700: #242c36;
+  --color-surface-600: #313b48;
+  --color-surface-500: #445160;
+  --color-surface-400: #637485;
+  --color-surface-300: #8899a8;
+  --color-surface-200: #b3c0cc;
+  --color-surface-100: #dde4ea;
+
+  --color-rose-400: #fb7185;
+  --color-rose-500: #f43f5e;
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* ── Base ── */
+html {
+  color-scheme: dark;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-surface-900);
+  color: var(--color-surface-100);
+  margin: 0;
+  min-height: 100dvh;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-surface-600); border-radius: 3px; }
+
+/* ── Card shimmer animation ── */
+@keyframes card-slide-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes gentle-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes countdown-glow {
+  0%, 100% { box-shadow: 0 0 30px rgba(109, 202, 148, 0.2); }
+  50% { box-shadow: 0 0 60px rgba(109, 202, 148, 0.4); }
+}
+
+.card-animated {
+  animation: card-slide-in 0.4s ease-out both;
+}
+
+.pulse-gentle {
+  animation: gentle-pulse 3s ease-in-out infinite;
+}
+
+.glow-countdown {
+  animation: countdown-glow 4s ease-in-out infinite;
+}

@@ -1,0 +1,168 @@
+{
+    "name": "unplugged",
+    "display_name": "Unplugged — Family Presence System",
+    "description": "A household data platform that manages schedules, meals, budgets, and presence scoring to promote screen-free family time.",
+    "version": "1.0.0",
+    "author": "HairlessJHarrison",
+    "base_url": "http://localhost/api/v1",
+    "auth": {
+        "type": "bearer",
+        "env_key": "UNPLUGGED_API_KEY"
+    },
+    "tools": [
+        {
+            "name": "get_today_schedule",
+            "description": "Get today's schedule events and free time blocks",
+            "method": "GET",
+            "path": "/schedules/today"
+        },
+        {
+            "name": "get_week_schedule",
+            "description": "Get this week's schedule events and free time blocks",
+            "method": "GET",
+            "path": "/schedules/week"
+        },
+        {
+            "name": "get_free_blocks",
+            "description": "Get available free time windows for the next N days",
+            "method": "GET",
+            "path": "/schedules/free-blocks",
+            "parameters": {
+                "days": {
+                    "type": "integer",
+                    "description": "Number of days to look ahead",
+                    "default": 7
+                }
+            }
+        },
+        {
+            "name": "create_schedule_event",
+            "description": "Create a new schedule event",
+            "method": "POST",
+            "path": "/schedules/events",
+            "body_schema": "ScheduleEventCreate"
+        },
+        {
+            "name": "get_meal_plan",
+            "description": "Get the current week's meal plan with cost and health summaries",
+            "method": "GET",
+            "path": "/meals/plan",
+            "parameters": {
+                "week": {
+                    "type": "string",
+                    "description": "Week to query (use 'current')",
+                    "default": "current"
+                }
+            }
+        },
+        {
+            "name": "create_meal_plan",
+            "description": "Add a meal to the meal plan",
+            "method": "POST",
+            "path": "/meals/plan",
+            "body_schema": "MealPlanCreate"
+        },
+        {
+            "name": "get_grocery_list",
+            "description": "Get consolidated grocery list from meal plans",
+            "method": "GET",
+            "path": "/meals/grocery-list"
+        },
+        {
+            "name": "get_budget_summary",
+            "description": "Get monthly budget vs actuals by category",
+            "method": "GET",
+            "path": "/budgets/summary",
+            "parameters": {
+                "month": {
+                    "type": "string",
+                    "description": "Month to query (use 'current')",
+                    "default": "current"
+                }
+            }
+        },
+        {
+            "name": "log_transaction",
+            "description": "Log a financial transaction",
+            "method": "POST",
+            "path": "/budgets/transactions",
+            "body_schema": "TransactionCreate"
+        },
+        {
+            "name": "get_spending_forecast",
+            "description": "Get projected spending for the rest of the month",
+            "method": "GET",
+            "path": "/budgets/forecast"
+        },
+        {
+            "name": "log_activity",
+            "description": "Log a scored family activity. Points are calculated server-side based on type, duration, and multipliers.",
+            "method": "POST",
+            "path": "/scoring/log-activity",
+            "body_schema": "ActivityCreate"
+        },
+        {
+            "name": "get_today_score",
+            "description": "Get today's activities and total presence points",
+            "method": "GET",
+            "path": "/scoring/today"
+        },
+        {
+            "name": "get_score_trends",
+            "description": "Get weekly presence score trends",
+            "method": "GET",
+            "path": "/scoring/trends",
+            "parameters": {
+                "weeks": {
+                    "type": "integer",
+                    "description": "Number of weeks to include",
+                    "default": 4
+                }
+            }
+        },
+        {
+            "name": "get_streaks",
+            "description": "Get current active activity streaks",
+            "method": "GET",
+            "path": "/scoring/streaks"
+        },
+        {
+            "name": "start_unplugged_session",
+            "description": "Start a screen-free unplugged session for the family",
+            "method": "POST",
+            "path": "/presence/start",
+            "body_schema": "PresenceSessionCreate"
+        },
+        {
+            "name": "end_unplugged_session",
+            "description": "End the active unplugged session and auto-log scored activity",
+            "method": "POST",
+            "path": "/presence/end"
+        },
+        {
+            "name": "get_presence_stats",
+            "description": "Get unplugged session statistics (total hours, avg duration, completion rate)",
+            "method": "GET",
+            "path": "/presence/stats"
+        },
+        {
+            "name": "get_household_config",
+            "description": "Get household configuration including members, dietary restrictions, and preferences",
+            "method": "GET",
+            "path": "/config/household"
+        },
+        {
+            "name": "update_household_config",
+            "description": "Update household configuration (e.g., set weekly reflection narrative)",
+            "method": "PUT",
+            "path": "/config/household",
+            "body_schema": "HouseholdConfigUpdate"
+        },
+        {
+            "name": "get_model_schemas",
+            "description": "Get JSON Schemas for all data models",
+            "method": "GET",
+            "path": "/config/schema"
+        }
+    ]
+}
