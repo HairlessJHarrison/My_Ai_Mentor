@@ -21,6 +21,10 @@ from api.budgets import router as budgets_router
 from api.scoring import router as scoring_router
 from api.presence import router as presence_router
 from api.config import router as config_router
+from api.members import router as members_router
+from api.goals import router as goals_router
+from api.chores import router as chores_router
+from api.google_calendar import router as google_calendar_router
 
 START_TIME = time.time()
 
@@ -53,6 +57,10 @@ app.include_router(budgets_router)
 app.include_router(scoring_router)
 app.include_router(presence_router)
 app.include_router(config_router)
+app.include_router(members_router)
+app.include_router(goals_router)
+app.include_router(chores_router)
+app.include_router(google_calendar_router)
 
 
 @app.get("/api/v1/health")

@@ -1,15 +1,35 @@
+import { useState, useEffect } from 'react';
 import { useHousehold } from '../context/HouseholdContext';
 import { useNavigate } from 'react-router-dom';
+import { get } from '../hooks/useApi';
 
 export default function ScoreCard() {
-    const { scoring } = useHousehold();
+    const { scoring, members } = useHousehold();
     const navigate = useNavigate();
+    const [selectedMember, setSelectedMember] = useState(null);
+    const [memberScore, setMemberScore] = useState(null);
+
     const totalPoints = scoring?.total_points || 0;
     const activities = scoring?.activities || [];
 
+    useEffect(() => {
+        if (members?.length > 0 && !selectedMember) {
+            setSelectedMember(members[0].id);
+        }
+    }, [members, selectedMember]);
+
+    useEffect(() => {
+        if (selectedMember) {
+            get(`/members/${selectedMember}/score?period=week`).then(setMemberScore).catch(() => {});
+        }
+    }, [selectedMember]);
+
+    const currentMember = members?.find(m => m.id === selectedMember);
+
     // Simple gauge: map points to 0-100 scale (100pts = full)
+    const displayPoints = memberScore?.total_points ?? totalPoints;
     const gaugeMax = 100;
-    const gaugePercent = Math.min((totalPoints / gaugeMax) * 100, 100);
+    const gaugePercent = Math.min((displayPoints / gaugeMax) * 100, 100);
 
     return (
         <div
@@ -21,8 +41,24 @@ export default function ScoreCard() {
                 <h3 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
                     <span className="text-xl">⭐</span> Presence Score
                 </h3>
-                <span className="text-xs text-surface-400">Today</span>
+                <span className="text-xs text-surface-400">{memberScore ? 'This week' : 'Today'}</span>
             </div>
+
+            {/* Member selector */}
+            {members?.length > 1 && (
+                <div className="flex gap-1.5 mb-3 overflow-x-auto" onClick={e => e.stopPropagation()}>
+                    {members.map(m => (
+                        <button key={m.id} onClick={() => setSelectedMember(m.id)}
+                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${selectedMember === m.id
+                                ? 'bg-forest-600/30 text-forest-300'
+                                : 'bg-surface-700/50 text-surface-400 hover:text-surface-300'
+                            }`}>
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: m.color }} />
+                            {m.name}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {/* Score gauge */}
             <div className="flex items-center gap-4 mb-4">
@@ -44,23 +80,36 @@ export default function ScoreCard() {
                         </defs>
                     </svg>
                     <span className="absolute inset-0 flex items-center justify-center text-xl font-bold text-surface-100">
-                        {totalPoints}
+                        {displayPoints}
                     </span>
                 </div>
                 <div className="flex-1">
-                    <p className="text-sm text-surface-300">
-                        {activities.length === 0 ? 'No activities logged yet' : `${activities.length} activit${activities.length === 1 ? 'y' : 'ies'} today`}
-                    </p>
-                    {totalPoints > 0 && (
-                        <p className="text-xs text-forest-400 mt-1">
-                            {totalPoints >= 50 ? '🌟 Amazing day!' : totalPoints >= 20 ? '✨ Great progress!' : '🌱 Keep going!'}
-                        </p>
+                    {memberScore ? (
+                        <>
+                            <p className="text-sm text-surface-300">{currentMember?.name || 'Member'}</p>
+                            <div className="flex gap-3 mt-1 text-xs">
+                                <span className="text-surface-400">Activities: <span className="text-amber-400">{memberScore.breakdown?.activities || 0}</span></span>
+                                <span className="text-surface-400">Goals: <span className="text-amber-400">{memberScore.breakdown?.goals || 0}</span></span>
+                                <span className="text-surface-400">Chores: <span className="text-amber-400">{memberScore.breakdown?.chores || 0}</span></span>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <p className="text-sm text-surface-300">
+                                {activities.length === 0 ? 'No activities logged yet' : `${activities.length} activit${activities.length === 1 ? 'y' : 'ies'} today`}
+                            </p>
+                            {totalPoints > 0 && (
+                                <p className="text-xs text-forest-400 mt-1">
+                                    {totalPoints >= 50 ? 'Amazing day!' : totalPoints >= 20 ? 'Great progress!' : 'Keep going!'}
+                                </p>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
 
             {/* Recent activities */}
-            {activities.length > 0 && (
+            {activities.length > 0 && !memberScore && (
                 <div className="space-y-1">
                     {activities.slice(-3).map((act, i) => (
                         <div key={act.id || i} className="flex justify-between text-xs px-2 py-1 bg-surface-700/40 rounded-md">

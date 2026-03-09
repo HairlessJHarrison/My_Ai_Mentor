@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { get, post } from '../hooks/useApi';
+import CsvImportWizard from '../components/CsvImportWizard';
 
 export default function BudgetView() {
     const navigate = useNavigate();
@@ -8,6 +9,7 @@ export default function BudgetView() {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
+    const [showCsvWizard, setShowCsvWizard] = useState(false);
     const [form, setForm] = useState({
         date: new Date().toISOString().slice(0, 10), amount: '',
         description: '', category: 'other', household_id: 'default',
@@ -47,10 +49,16 @@ export default function BudgetView() {
                     <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200">&larr;</button>
                     <h1 className="text-2xl font-bold text-surface-100">💰 Budget</h1>
                 </div>
-                <button onClick={() => setShowForm(!showForm)}
-                    className="px-4 py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors">
-                    + Log Transaction
-                </button>
+                <div className="flex gap-2">
+                    <button onClick={() => setShowCsvWizard(true)}
+                        className="px-4 py-2 bg-surface-700 hover:bg-surface-600 text-surface-200 rounded-xl text-sm font-medium transition-colors">
+                        Import CSV
+                    </button>
+                    <button onClick={() => setShowForm(!showForm)}
+                        className="px-4 py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors">
+                        + Log Transaction
+                    </button>
+                </div>
             </div>
 
             {showForm && (
@@ -125,6 +133,19 @@ export default function BudgetView() {
                         ))}
                     </div>
                 </>
+            )}
+
+            {showCsvWizard && (
+                <CsvImportWizard
+                    onClose={() => setShowCsvWizard(false)}
+                    onImported={async () => {
+                        const [s, t] = await Promise.all([
+                            get('/budgets/summary?month=current'),
+                            get('/budgets/transactions?month=current'),
+                        ]);
+                        setSummary(s); setTransactions(t);
+                    }}
+                />
             )}
         </div>
     );

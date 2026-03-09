@@ -163,6 +163,229 @@
             "description": "Get JSON Schemas for all data models",
             "method": "GET",
             "path": "/config/schema"
+        },
+        {
+            "name": "list_members",
+            "description": "List all household members with roles and colors",
+            "method": "GET",
+            "path": "/members"
+        },
+        {
+            "name": "create_member",
+            "description": "Add a new family member to the household",
+            "method": "POST",
+            "path": "/members",
+            "body_schema": "MemberCreate"
+        },
+        {
+            "name": "update_member",
+            "description": "Update a member's profile (name, role, color, avatar)",
+            "method": "PUT",
+            "path": "/members/{member_id}",
+            "parameters": {
+                "member_id": {
+                    "type": "integer",
+                    "description": "Member ID to update",
+                    "required": true
+                }
+            },
+            "body_schema": "MemberUpdate"
+        },
+        {
+            "name": "get_member_score",
+            "description": "Get a member's total score with breakdown by activities, goals, and chores",
+            "method": "GET",
+            "path": "/members/{member_id}/score",
+            "parameters": {
+                "member_id": {
+                    "type": "integer",
+                    "description": "Member ID",
+                    "required": true
+                },
+                "period": {
+                    "type": "string",
+                    "description": "Score period: week, month, or all",
+                    "default": "week"
+                }
+            }
+        },
+        {
+            "name": "list_goals",
+            "description": "List personal goals, optionally filtered by member",
+            "method": "GET",
+            "path": "/goals",
+            "parameters": {
+                "member_id": {
+                    "type": "integer",
+                    "description": "Filter by member ID (optional)"
+                }
+            }
+        },
+        {
+            "name": "create_goal",
+            "description": "Create a new personal goal for a member",
+            "method": "POST",
+            "path": "/goals",
+            "body_schema": "PersonalGoalCreate"
+        },
+        {
+            "name": "update_goal",
+            "description": "Update a personal goal",
+            "method": "PUT",
+            "path": "/goals/{goal_id}",
+            "parameters": {
+                "goal_id": {
+                    "type": "integer",
+                    "description": "Goal ID to update",
+                    "required": true
+                }
+            },
+            "body_schema": "PersonalGoalUpdate"
+        },
+        {
+            "name": "complete_goal",
+            "description": "Log a goal completion. Points calculated server-side with streak multipliers.",
+            "method": "POST",
+            "path": "/goals/complete",
+            "body_schema": "GoalCompleteRequest"
+        },
+        {
+            "name": "get_goal_progress",
+            "description": "Get goal completion history and streaks for a member",
+            "method": "GET",
+            "path": "/goals/progress",
+            "parameters": {
+                "member_id": {
+                    "type": "integer",
+                    "description": "Member ID",
+                    "required": true
+                },
+                "days": {
+                    "type": "integer",
+                    "description": "Number of days to look back",
+                    "default": 7
+                }
+            }
+        },
+        {
+            "name": "list_chores",
+            "description": "List all active household chores",
+            "method": "GET",
+            "path": "/chores"
+        },
+        {
+            "name": "create_chore",
+            "description": "Create a new household chore",
+            "method": "POST",
+            "path": "/chores",
+            "body_schema": "ChoreCreate"
+        },
+        {
+            "name": "complete_chore",
+            "description": "Log a chore completion for a member",
+            "method": "POST",
+            "path": "/chores/complete",
+            "body_schema": "ChoreCompleteRequest"
+        },
+        {
+            "name": "verify_chore",
+            "description": "Parent verifies a chore completion",
+            "method": "POST",
+            "path": "/chores/verify/{completion_id}",
+            "parameters": {
+                "completion_id": {
+                    "type": "integer",
+                    "description": "Chore completion ID to verify",
+                    "required": true
+                }
+            }
+        },
+        {
+            "name": "get_chore_status",
+            "description": "Get today's chore status per member with completion tracking",
+            "method": "GET",
+            "path": "/chores/status",
+            "parameters": {
+                "date": {
+                    "type": "string",
+                    "description": "Date in YYYY-MM-DD format (defaults to today)"
+                }
+            }
+        },
+        {
+            "name": "get_google_auth_url",
+            "description": "Get Google OAuth2 authorization URL to connect a member's calendar",
+            "method": "GET",
+            "path": "/google-calendar/auth-url",
+            "parameters": {
+                "member_id": {
+                    "type": "integer",
+                    "description": "Member ID to authorize",
+                    "required": true
+                }
+            }
+        },
+        {
+            "name": "google_calendar_callback",
+            "description": "Handle Google OAuth2 callback and store credentials",
+            "method": "POST",
+            "path": "/google-calendar/callback"
+        },
+        {
+            "name": "sync_google_calendar",
+            "description": "Trigger a two-way sync between local schedule and a member's Google Calendar",
+            "method": "POST",
+            "path": "/google-calendar/sync/{member_id}",
+            "parameters": {
+                "member_id": {
+                    "type": "integer",
+                    "description": "Member ID to sync",
+                    "required": true
+                }
+            }
+        },
+        {
+            "name": "disconnect_google_calendar",
+            "description": "Disconnect a member's Google Calendar integration",
+            "method": "DELETE",
+            "path": "/google-calendar/disconnect/{member_id}",
+            "parameters": {
+                "member_id": {
+                    "type": "integer",
+                    "description": "Member ID to disconnect",
+                    "required": true
+                }
+            }
+        },
+        {
+            "name": "list_csv_mappings",
+            "description": "List saved CSV column mapping profiles for budget imports",
+            "method": "GET",
+            "path": "/budgets/csv-mappings"
+        },
+        {
+            "name": "save_csv_mapping",
+            "description": "Save a new CSV column mapping profile",
+            "method": "POST",
+            "path": "/budgets/csv-mappings",
+            "body_schema": "CsvColumnMappingCreate"
+        },
+        {
+            "name": "get_member_schedule",
+            "description": "Get schedule events assigned to a specific member",
+            "method": "GET",
+            "path": "/schedules/member/{member_id}",
+            "parameters": {
+                "member_id": {
+                    "type": "integer",
+                    "description": "Member ID",
+                    "required": true
+                },
+                "start_date": {
+                    "type": "string",
+                    "description": "Start date in YYYY-MM-DD format (defaults to today)"
+                }
+            }
         }
     ]
 }

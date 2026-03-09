@@ -1,6 +1,6 @@
 # Unplugged — Product Requirements Document
 
-> **Version:** 2.0 | **Date:** March 2026 | **Status:** Ready for Development
+> **Version:** 3.0 | **Date:** March 2026 | **Status:** MVP Complete — Phase 2 Features In Progress
 >
 > **One-liner:** A household data platform and visual dashboard hosted on a Raspberry Pi 4B (8GB), serving as the knowledge base and tool layer for an OpenClaw autonomous AI agent to manage schedules, meals, budgets, and presence scoring — all in service of maximizing screen-free family time.
 
@@ -154,8 +154,12 @@ class ScheduleEvent(SQLModel, table=True):
     event_type: Literal["appointment", "work", "school", "social", "errand", "protected_time", "other"] = Field(description="Category of event")
     is_protected: bool = Field(default=False, description="Whether this is a protected screen-free block")
     participants: list[str] = Field(default=[], sa_column=Column(JSON), description="List of household members involved")
+    assigned_member_ids: list[int] = Field(default=[], sa_column=Column(JSON), description="Member IDs assigned to this event (Phase 10)")
+    location: str | None = Field(default=None, description="Event location (address or place name)")
+    travel_time_min: int | None = Field(default=None, description="Travel time in minutes (manual or auto-calculated via Google Maps)")
+    google_event_id: str | None = Field(default=None, description="Google Calendar event ID for two-way sync")
     recurrence_rule: dict | None = Field(default=None, sa_column=Column(JSON), description="iCal RRULE as JSON, null if one-time")
-    source: Literal["manual", "caldav_import", "openclaw"] = Field(default="manual", description="How this event was created")
+    source: Literal["manual", "caldav_import", "google_calendar", "openclaw"] = Field(default="manual", description="How this event was created")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 ```
@@ -269,6 +273,104 @@ class HouseholdConfig(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 ```
 
+#### Member (Phase 10 — NEW)
+
+```python
+class Member(SQLModel, table=True):
+    __tablename__ = "members"
+
+    id: int | None = Field(default=None, primary_key=True)
+    household_id: str = Field(description="Household identifier", index=True)
+    name: str = Field(description="Display name")
+    role: Literal["parent", "child"] = Field(description="Role in the household")
+    age: int | None = Field(default=None, description="Age of the member")
+    color: str = Field(default="#22c55e", description="Hex color for calendar/UI display")
+    avatar: str | None = Field(default=None, description="Avatar image URL or emoji")
+    google_calendar_id: str | None = Field(default=None, description="Google Calendar ID for sync")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+```
+
+#### PersonalGoal (Phase 10 — NEW)
+
+```python
+class PersonalGoal(SQLModel, table=True):
+    __tablename__ = "personal_goals"
+
+    id: int | None = Field(default=None, primary_key=True)
+    household_id: str = Field(description="Household identifier")
+    member_id: int = Field(foreign_key="members.id", description="Which family member owns this goal")
+    title: str = Field(description="Goal title, e.g. 'Practice piano', 'Read 30 minutes', 'Run 1 mile'")
+    category: Literal["learning", "fitness", "creativity", "mindfulness", "health", "other"] = Field(description="Goal category")
+    target_frequency: Literal["daily", "weekdays", "weekly", "custom"] = Field(default="daily", description="How often this goal should be completed")
+    points_per_completion: int = Field(default=10, description="Points earned each time this goal is completed")
+    is_active: bool = Field(default=True, description="Whether this goal is currently being tracked")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+```
+
+#### GoalCompletion (Phase 10 — NEW)
+
+```python
+class GoalCompletion(SQLModel, table=True):
+    __tablename__ = "goal_completions"
+
+    id: int | None = Field(default=None, primary_key=True)
+    household_id: str = Field(description="Household identifier")
+    goal_id: int = Field(foreign_key="personal_goals.id", description="Which goal was completed")
+    member_id: int = Field(foreign_key="members.id", description="Who completed it")
+    date: date = Field(description="Date of completion", index=True)
+    duration_min: int | None = Field(default=None, description="Optional duration in minutes")
+    notes: str | None = Field(default=None, description="Optional notes about the completion")
+    points_earned: int = Field(description="Points earned (from goal config + any multipliers)")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+```
+
+#### Chore (Phase 10 — NEW)
+
+```python
+class Chore(SQLModel, table=True):
+    __tablename__ = "chores"
+
+    id: int | None = Field(default=None, primary_key=True)
+    household_id: str = Field(description="Household identifier")
+    title: str = Field(description="Chore name, e.g. 'Make bed', 'Wash dishes', 'Take out trash'")
+    points: int = Field(description="Points earned for completing this chore")
+    assigned_member_ids: list[int] = Field(default=[], sa_column=Column(JSON), description="Member IDs this chore is assigned to (empty = anyone)")
+    frequency: Literal["daily", "weekly", "as_needed"] = Field(default="daily", description="How often this chore resets")
+    is_active: bool = Field(default=True, description="Whether this chore is currently active")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+```
+
+#### ChoreCompletion (Phase 10 — NEW)
+
+```python
+class ChoreCompletion(SQLModel, table=True):
+    __tablename__ = "chore_completions"
+
+    id: int | None = Field(default=None, primary_key=True)
+    household_id: str = Field(description="Household identifier")
+    chore_id: int = Field(foreign_key="chores.id", description="Which chore was completed")
+    member_id: int = Field(foreign_key="members.id", description="Who completed it")
+    date: date = Field(description="Date of completion", index=True)
+    verified_by: int | None = Field(default=None, foreign_key="members.id", description="Parent who verified (optional)")
+    points_earned: int = Field(description="Points earned")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+```
+
+#### CsvColumnMapping (Phase 10 — NEW)
+
+```python
+class CsvColumnMapping(SQLModel, table=True):
+    __tablename__ = "csv_column_mappings"
+
+    id: int | None = Field(default=None, primary_key=True)
+    household_id: str = Field(description="Household identifier")
+    name: str = Field(description="Mapping profile name, e.g. 'Chase Checking', 'Amex Credit'")
+    account_type: Literal["checking", "credit_card", "savings"] = Field(description="Type of bank account")
+    column_map: dict = Field(sa_column=Column(JSON), description="Maps CSV columns to fields: {date_col, amount_col, description_col, category_col?, skip_rows?, date_format?}")
+    amount_sign: Literal["as_is", "invert"] = Field(default="as_is", description="Whether to invert amount sign (some banks use positive for debits)")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+```
+
 ---
 
 ## 5. API Specification
@@ -295,6 +397,7 @@ class HouseholdConfig(SQLModel, table=True):
 | PUT | `/api/v1/schedules/events/{id}/protect` | Mark/unmark a time block as protected | `{is_protected: bool}` | Updated `ScheduleEvent` |
 | DELETE | `/api/v1/schedules/events/{id}` | Delete an event | — | `{deleted: true}` |
 | POST | `/api/v1/schedules/import-caldav` | Import events from a CalDAV URL | `{caldav_url, username, password}` | `{imported_count: int}` |
+| GET | `/api/v1/schedules/member/{member_id}` | Events for a specific member (Phase 10) | — | `{events: ScheduleEvent[], free_blocks: [...]}` |
 
 #### Meals
 
@@ -346,6 +449,64 @@ class HouseholdConfig(SQLModel, table=True):
 | GET | `/api/v1/config/schema` | Export all Pydantic model JSON Schemas (for skill generation and schema-driven forms) | — | `{models: {ModelName: JSONSchema, ...}}` |
 | GET | `/api/v1/health` | Health check endpoint | — | `{status: "ok", version: "1.0.0", uptime_seconds: int}` |
 
+#### Members (Phase 10 — NEW)
+
+| Method | Endpoint | Description | Request Body | Response |
+|--------|----------|-------------|--------------|----------|
+| GET | `/api/v1/members` | List all household members | — | `Member[]` |
+| POST | `/api/v1/members` | Create a new member | `Member` (without id) | Created `Member` |
+| PUT | `/api/v1/members/{id}` | Update a member | Partial `Member` | Updated `Member` |
+| DELETE | `/api/v1/members/{id}` | Remove a member | — | `{deleted: true}` |
+| GET | `/api/v1/members/{id}/score?period=week` | Get a member's total score for a period | — | `{member_id, total_points, breakdown: {activities, goals, chores}}` |
+
+#### Personal Goals (Phase 10 — NEW)
+
+| Method | Endpoint | Description | Request Body | Response |
+|--------|----------|-------------|--------------|----------|
+| GET | `/api/v1/goals?member_id=X` | List goals for a member | — | `PersonalGoal[]` |
+| POST | `/api/v1/goals` | Create a new personal goal | `PersonalGoal` (without id) | Created `PersonalGoal` |
+| PUT | `/api/v1/goals/{id}` | Update a goal | Partial `PersonalGoal` | Updated `PersonalGoal` |
+| DELETE | `/api/v1/goals/{id}` | Deactivate a goal | — | `{deleted: true}` |
+| POST | `/api/v1/goals/complete` | Log a goal completion | `{goal_id, member_id, duration_min?, notes?}` | Created `GoalCompletion` with `points_earned` |
+| GET | `/api/v1/goals/progress?member_id=X&days=7` | Goal completion history and streaks | — | `{goals: [{goal, completions[], streak_days, points_total}]}` |
+
+#### Chores (Phase 10 — NEW)
+
+| Method | Endpoint | Description | Request Body | Response |
+|--------|----------|-------------|--------------|----------|
+| GET | `/api/v1/chores` | List all household chores | — | `Chore[]` |
+| POST | `/api/v1/chores` | Create a new chore (parents only) | `Chore` (without id) | Created `Chore` |
+| PUT | `/api/v1/chores/{id}` | Update a chore | Partial `Chore` | Updated `Chore` |
+| DELETE | `/api/v1/chores/{id}` | Deactivate a chore | — | `{deleted: true}` |
+| POST | `/api/v1/chores/complete` | Log a chore completion | `{chore_id, member_id}` | Created `ChoreCompletion` with `points_earned` |
+| POST | `/api/v1/chores/verify/{completion_id}` | Parent verifies a chore completion | `{verified_by: member_id}` | Updated `ChoreCompletion` |
+| GET | `/api/v1/chores/status?date=today` | Today's chore status per member | — | `{members: [{member_id, chores: [{chore, completed}]}]}` |
+
+#### Google Calendar (Phase 10 — NEW)
+
+| Method | Endpoint | Description | Request Body | Response |
+|--------|----------|-------------|--------------|----------|
+| GET | `/api/v1/google-calendar/auth-url` | Get OAuth2 authorization URL | — | `{url: string}` |
+| POST | `/api/v1/google-calendar/callback` | Handle OAuth2 callback | `{code: string}` | `{success: true, member_id}` |
+| POST | `/api/v1/google-calendar/sync/{member_id}` | Trigger sync for a member | — | `{imported: int, exported: int, updated: int}` |
+| DELETE | `/api/v1/google-calendar/disconnect/{member_id}` | Disconnect Google Calendar | — | `{disconnected: true}` |
+
+#### CSV Column Mappings (Phase 10 — NEW)
+
+| Method | Endpoint | Description | Request Body | Response |
+|--------|----------|-------------|--------------|----------|
+| GET | `/api/v1/budgets/csv-mappings` | List saved CSV column mappings | — | `CsvColumnMapping[]` |
+| POST | `/api/v1/budgets/csv-mappings` | Save a new column mapping profile | `CsvColumnMapping` (without id) | Created `CsvColumnMapping` |
+| POST | `/api/v1/budgets/import-csv` | Import CSV with column mapping | `multipart/form-data` + `mapping_id` or inline `column_map` | `{imported_count, skipped, errors[]}` |
+| POST | `/api/v1/budgets/import-csv/preview` | Preview first 5 rows with mapping applied | `multipart/form-data` + `column_map` | `{rows: Transaction[], warnings[]}` |
+
+#### Travel Time (Phase 10 — NEW)
+
+| Method | Endpoint | Description | Request Body | Response |
+|--------|----------|-------------|--------------|----------|
+| GET | `/api/v1/schedules/travel-time?from=X&to=Y` | Calculate travel time between locations | — | `{duration_min, distance_km, mode: "driving"}` |
+| POST | `/api/v1/schedules/events/{id}/auto-travel` | Auto-calculate and set travel time for an event | `{from_location: string}` | Updated `ScheduleEvent` with `travel_time_min` |
+
 ### 5.3 WebSocket Events
 
 The WebSocket endpoint at `/ws` pushes typed JSON events to all connected dashboard clients whenever data changes:
@@ -358,19 +519,29 @@ The WebSocket endpoint at `/ws` pushes typed JSON events to all connected dashbo
 {"event": "presence_started", "data": { ...PresenceSession }}
 {"event": "presence_ended", "data": { ...PresenceSession }}
 {"event": "config_updated", "data": { ...HouseholdConfig }}
+{"event": "goal_completed", "data": { ...GoalCompletion }}
+{"event": "chore_completed", "data": { ...ChoreCompletion }}
+{"event": "chore_verified", "data": { ...ChoreCompletion }}
+{"event": "calendar_synced", "data": { member_id, imported, exported }}
 ```
 
 The React frontend uses a `useWebSocket` hook that listens for these events and updates relevant component state in real-time.
 
 ---
 
-## 6. Presence Scoring System
+## 6. Scoring System — "Become Who You Want to Be"
 
-### 6.1 Scoring Rules
+> **Phase 10 overhaul:** The scoring system has been redesigned from a household-only presence score to an **individual point system** that rewards personal growth, family connection, and household responsibility. Every family member earns their own points.
 
-The scoring system uses **positive reinforcement only**. No penalties for screen time. Only points earned for choices aligned with human connection.
+### 6.1 Three Point Sources
 
-| Activity Type | Base Points | Multiplier | Condition | Max/Day |
+Every member earns individual points from three sources:
+
+#### A. Family Activities (carried forward from MVP)
+
+When a family activity is logged, **every participant earns individual points**.
+
+| Activity Type | Base Points | Multiplier | Condition | Max/Day per person |
 |--------------|-------------|------------|-----------|---------|
 | `screen_free_family` | 10 pts/hr | x1.5 if 2+ participants | Manually logged or via OpenClaw | 60 pts |
 | `outdoor` | 15 pts/hr | x2.0 if family activity | Logged by user or agent | 90 pts |
@@ -378,23 +549,57 @@ The scoring system uses **positive reinforcement only**. No penalties for screen
 | `game_creative` | 12 pts/hr | x1.5 streak bonus (3+ consecutive days) | Logged by user or agent | 54 pts |
 | `one_on_one` | 20 pts/hr | x2.0 if activity was pre-scheduled (in a protected block) | Protected block used | 80 pts |
 
+#### B. Personal Goals
+
+Each member defines custom goals that reflect who they want to become. Points are configurable per goal.
+
+**Examples:**
+- Kid: "Practice piano 20 min" → 15 pts, daily
+- Kid: "Read a book chapter" → 10 pts, daily
+- Parent: "Morning run" → 20 pts, weekdays
+- Parent: "Meditate 10 min" → 10 pts, daily
+
+Goals have categories (`learning`, `fitness`, `creativity`, `mindfulness`, `health`, `other`) for dashboard grouping. Streak multipliers apply: x1.5 bonus after 3+ consecutive days of completing a goal.
+
+#### C. Chores
+
+Parents configure household chores with custom point values and assign them to specific members (or leave open for anyone).
+
+**Examples:**
+- "Make bed" → 5 pts (assigned to kids, daily)
+- "Wash dishes" → 10 pts (assigned to everyone, daily)
+- "Mow lawn" → 25 pts (assigned to teens, weekly)
+- "Cook dinner" → 15 pts (assigned to parents, daily)
+
+Optional: parents can verify chore completion before points are awarded.
+
 ### 6.2 Calculation Logic (Server-Side)
 
-When `POST /api/v1/scoring/log-activity` is called:
-
+**For family activities** (`POST /api/v1/scoring/log-activity`):
 1. Look up the base points for the `activity_type`.
 2. Calculate `base_points = base_pts_per_hour * (duration_min / 60)`.
 3. Check multiplier conditions (participants count, streak status, protected block linkage, meal plan linkage).
 4. Apply the highest applicable multiplier (multipliers do NOT stack).
 5. Cap at the daily max for that activity type.
-6. Store the `Activity` record with `points_earned` and `multipliers_applied`.
+6. Award points **individually to each participant** by `member_id`.
+
+**For personal goals** (`POST /api/v1/goals/complete`):
+1. Look up the goal's `points_per_completion`.
+2. Check streak: if goal completed 3+ consecutive days, apply x1.5 multiplier.
+3. Store a `GoalCompletion` record with points.
+
+**For chores** (`POST /api/v1/chores/complete`):
+1. Look up the chore's configured `points`.
+2. Store a `ChoreCompletion` record.
+3. Optionally await parent verification before crediting points.
 
 ### 6.3 Anti-Addiction Design Rules
 
-- Scores are displayed as **weekly summaries only**, never real-time counters.
-- There is **no leaderboard** between family members. The household shares a single collective score.
+- Scores are displayed as **weekly summaries**, with a simple daily progress indicator.
+- There is **no competitive leaderboard**. Each member sees their own progress toward their own goals.
 - The system **celebrates what went right** rather than shaming what didn't.
-- The weekly reflection narrative (written by OpenClaw via the API) should be warm and encouraging.
+- The weekly reflection narrative (written by OpenClaw via the API) should be warm, encouraging, and personalized per member.
+- Parents can see all family members' progress. Kids see only their own.
 
 ---
 
@@ -849,17 +1054,29 @@ Build in this order:
 10. **Docker deployment:** `docker compose up` working on Pi 4B.
 11. **OpenClaw skill:** `skill.json` covering all endpoints + README.
 
-### V1.0 (Weeks 7–12)
+### Phase 10: Individual Scoring, Google Calendar, Locations & CSV Mapping
+
+Build in this order:
+
+1. **Member profiles:** `Member` model + CRUD API. Migrate existing `participants` string lists to member ID references.
+2. **Personal goals:** `PersonalGoal` + `GoalCompletion` models + API. Per-member goal tracking with streak detection.
+3. **Chore system:** `Chore` + `ChoreCompletion` models + API. Parent-configurable chores with point values and optional verification.
+4. **Scoring engine overhaul:** Refactor `scoring_engine.py` to award individual points per participant. Merge family activities, goals, and chores into unified per-member score.
+5. **Schedule locations + travel time:** Add `location`, `travel_time_min`, `assigned_member_ids` fields to `ScheduleEvent`. Google Maps Directions API integration for auto-calculated travel time.
+6. **Google Calendar two-way sync:** OAuth2 flow, `google_event_id` tracking, sync service that imports/exports events per member.
+7. **CSV column mapping:** `CsvColumnMapping` model + saved profiles. Preview endpoint. Support for credit card and checking statement formats with configurable amount sign inversion.
+8. **Frontend updates:** Per-member dashboard views, goal tracker UI, chore board, member calendar filters, CSV import wizard with column mapping.
+9. **OpenClaw skill update:** Add new tools for goals, chores, member scores, and calendar sync.
+
+### V1.0 (Post Phase 10)
 
 - Schema-driven forms for all manual data entry
-- Weekly reflection view (renders OpenClaw-written narrative)
-- Full module views (schedule, meals, budget, scoring)
-- CalDAV import for external calendar sync
+- Weekly reflection view (renders OpenClaw-written narrative, personalized per member)
 - API key auth and rate limiting
 - Automated daily SQLite backup
 - PWA offline support for core read-only views
 
-### V2.0 — Cloud Launch (Months 4–8)
+### V2.0 — Cloud Launch (Future)
 
 - Multi-tenant PostgreSQL deployment
 - JWT authentication

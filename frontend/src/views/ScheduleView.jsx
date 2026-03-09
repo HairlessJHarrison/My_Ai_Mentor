@@ -5,6 +5,7 @@ import { get, post, del } from '../hooks/useApi';
 export default function ScheduleView() {
     const navigate = useNavigate();
     const [data, setData] = useState({ events: [], free_blocks: [] });
+    const [members, setMembers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [form, setForm] = useState({
@@ -14,7 +15,9 @@ export default function ScheduleView() {
     });
 
     useEffect(() => {
-        get('/schedules/week').then(setData).catch(console.error).finally(() => setLoading(false));
+        Promise.all([get('/schedules/week'), get('/members')])
+            .then(([d, m]) => { setData(d); setMembers(m); })
+            .catch(console.error).finally(() => setLoading(false));
     }, []);
 
     const createEvent = async (e) => {
@@ -109,7 +112,22 @@ export default function ScheduleView() {
                                         {event.date} · {event.start_time?.slice(0, 5)} – {event.end_time?.slice(0, 5)}
                                         <span className="ml-2 capitalize">{event.event_type.replace(/_/g, ' ')}</span>
                                     </p>
+                                    {(event.location || event.travel_time_min) && (
+                                        <p className="text-xs text-surface-500 mt-0.5">
+                                            {event.location && <><span className="text-forest-400">📍</span> {event.location}</>}
+                                            {event.travel_time_min && <span className="ml-2 text-amber-400/70">~{event.travel_time_min}m drive</span>}
+                                        </p>
+                                    )}
                                 </div>
+                                {/* Member color dots */}
+                                {event.assigned_member_ids?.length > 0 && (
+                                    <div className="flex gap-1 shrink-0">
+                                        {event.assigned_member_ids.map(id => {
+                                            const m = members.find(mem => mem.id === id);
+                                            return m ? <span key={id} className="w-3 h-3 rounded-full" style={{ backgroundColor: m.color }} title={m.name} /> : null;
+                                        })}
+                                    </div>
+                                )}
                                 {event.is_protected && <span className="text-forest-400 text-xs font-medium">Protected</span>}
                                 <button onClick={() => deleteEvent(event.id)}
                                     className="text-surface-500 hover:text-rose-400 transition-colors text-sm">✕</button>

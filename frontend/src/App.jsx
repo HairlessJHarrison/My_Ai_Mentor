@@ -6,6 +6,8 @@ import ScheduleView from './views/ScheduleView';
 import MealsView from './views/MealsView';
 import BudgetView from './views/BudgetView';
 import ScoringView from './views/ScoringView';
+import GoalsView from './views/GoalsView';
+import ChoresView from './views/ChoresView';
 
 export default function App() {
   return (
@@ -18,6 +20,8 @@ export default function App() {
           <Route path="/meals" element={<MealsView />} />
           <Route path="/budget" element={<BudgetView />} />
           <Route path="/scoring" element={<ScoringView />} />
+          <Route path="/goals" element={<GoalsView />} />
+          <Route path="/chores" element={<ChoresView />} />
         </Routes>
       </HouseholdProvider>
     </BrowserRouter>

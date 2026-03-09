@@ -5,6 +5,8 @@ import ScheduleCard from './ScheduleCard';
 import MealCard from './MealCard';
 import BudgetCard from './BudgetCard';
 import ScoreCard from './ScoreCard';
+import GoalCard from './GoalCard';
+import ChoreCard from './ChoreCard';
 
 export default function Dashboard() {
     const { config, connected, loading, setPresence } = useHousehold();
@@ -71,11 +73,13 @@ export default function Dashboard() {
             </header>
 
             {/* Dashboard cards grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                 <ScheduleCard />
                 <MealCard />
                 <BudgetCard />
                 <ScoreCard />
+                <GoalCard />
+                <ChoreCard />
             </div>
 
             {/* Unplugged Button */}

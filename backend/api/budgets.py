@@ -11,7 +11,9 @@ from database import get_session
 from models.budget import Budget, BudgetCreate
 from models.transaction import Transaction, TransactionCreate
 from services.csv_importer import parse_csv
+from services.csv_importer_v2 import parse_csv_with_mapping, preview_csv
 from services.budget_forecaster import forecast_spending
+from models.csv_mapping import CsvColumnMapping, CsvColumnMappingCreate
 from websocket import manager
 
 router = APIRouter(prefix="/api/v1/budgets", tags=["Budgets"])
@@ -172,15 +174,54 @@ async def create_transaction(
     return txn
 
 
-@router.post("/import-csv")
-async def import_csv(
-    file: UploadFile = File(...),
+@router.get("/csv-mappings")
+async def list_csv_mappings(
     session: Session = Depends(get_session),
     _auth: str = Depends(verify_api_key),
 ):
-    """Bulk import transactions from a bank CSV file."""
+    """List saved CSV column mapping profiles."""
+    mappings = session.exec(
+        select(CsvColumnMapping).where(CsvColumnMapping.household_id == HOUSEHOLD_ID)
+    ).all()
+    return [m.model_dump(mode="json") for m in mappings]
+
+
+@router.post("/csv-mappings", status_code=201)
+async def create_csv_mapping(
+    body: CsvColumnMappingCreate,
+    session: Session = Depends(get_session),
+    _auth: str = Depends(verify_api_key),
+):
+    """Save a new column mapping profile."""
+    mapping = CsvColumnMapping.model_validate(body)
+    session.add(mapping)
+    session.commit()
+    session.refresh(mapping)
+    return mapping
+
+
+@router.post("/import-csv")
+async def import_csv(
+    file: UploadFile = File(...),
+    mapping_id: Optional[int] = Query(None, description="Saved mapping profile ID"),
+    session: Session = Depends(get_session),
+    _auth: str = Depends(verify_api_key),
+):
+    """Bulk import transactions from a bank CSV file.
+
+    If mapping_id is provided, uses the saved column mapping profile.
+    Otherwise falls back to auto-detection.
+    """
     content = await file.read()
-    result = parse_csv(content.decode("utf-8-sig"))
+    file_text = content.decode("utf-8-sig")
+
+    if mapping_id:
+        mapping = session.get(CsvColumnMapping, mapping_id)
+        if not mapping:
+            raise HTTPException(status_code=404, detail="CSV mapping not found")
+        result = parse_csv_with_mapping(file_text, mapping.column_map, mapping.amount_sign)
+    else:
+        result = parse_csv(file_text)
 
     imported_count = 0
     for t_data in result["transactions"]:
@@ -206,6 +247,31 @@ async def import_csv(
         "skipped": result["skipped"],
         "errors": result["errors"],
     }
+
+
+@router.post("/import-csv/preview")
+async def preview_csv_import(
+    file: UploadFile = File(...),
+    mapping_id: Optional[int] = Query(None, description="Saved mapping profile ID"),
+    session: Session = Depends(get_session),
+    _auth: str = Depends(verify_api_key),
+):
+    """Preview first 5 rows of a CSV with mapping applied before committing."""
+    content = await file.read()
+    file_text = content.decode("utf-8-sig")
+
+    if mapping_id:
+        mapping = session.get(CsvColumnMapping, mapping_id)
+        if not mapping:
+            raise HTTPException(status_code=404, detail="CSV mapping not found")
+        return preview_csv(file_text, mapping.column_map, mapping.amount_sign)
+    else:
+        # Auto-detect: use legacy parser for preview
+        result = parse_csv(file_text)
+        return {
+            "rows": result["transactions"][:5],
+            "warnings": result["errors"][:5],
+        }
 
 
 @router.get("/forecast")

@@ -1,0 +1,28 @@
+services:
+  api:
+    build: ./backend
+    command: uvicorn main:app --reload --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///data/unplugged.db
+      - API_KEY=${UNPLUGGED_API_KEY}
+      - HOUSEHOLD_ID=${HOUSEHOLD_ID:-default}
+    volumes:
+      - ./backend:/app
+      - db_data:/app/data
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    command: npm run dev -- --host 0.0.0.0
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api
+
+volumes:
+  db_data:
