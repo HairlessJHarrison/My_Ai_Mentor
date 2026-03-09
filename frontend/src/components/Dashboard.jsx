@@ -7,9 +7,10 @@ import BudgetCard from './BudgetCard';
 import ScoreCard from './ScoreCard';
 import GoalCard from './GoalCard';
 import ChoreCard from './ChoreCard';
+import OnboardingWizard from './OnboardingWizard';
 
 export default function Dashboard() {
-    const { config, connected, loading, setPresence } = useHousehold();
+    const { config, connected, loading, members, refresh, setPresence } = useHousehold();
     const [startingSession, setStartingSession] = useState(false);
     const [showUnplugDialog, setShowUnplugDialog] = useState(false);
     const [duration, setDuration] = useState(30);
@@ -34,6 +35,8 @@ export default function Dashboard() {
         }
     }, [duration, setPresence]);
 
+    const needsOnboarding = !loading && members.length === 0;
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -43,6 +46,10 @@ export default function Dashboard() {
                 </div>
             </div>
         );
+    }
+
+    if (needsOnboarding) {
+        return <OnboardingWizard onComplete={refresh} />;
     }
 
     return (
