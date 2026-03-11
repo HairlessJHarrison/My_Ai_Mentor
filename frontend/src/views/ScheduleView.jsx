@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { get, post, del } from '../hooks/useApi';
+import { get, post, put, del } from '../hooks/useApi';
+
+const emptyForm = () => ({
+    title: '', date: new Date().toISOString().slice(0, 10),
+    start_time: '09:00', end_time: '10:00', event_type: 'other',
+    household_id: 'default', assigned_member_ids: [],
+});
 
 export default function ScheduleView() {
     const navigate = useNavigate();
@@ -8,11 +14,8 @@ export default function ScheduleView() {
     const [members, setMembers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
-    const [form, setForm] = useState({
-        title: '', date: new Date().toISOString().slice(0, 10),
-        start_time: '09:00', end_time: '10:00', event_type: 'other',
-        household_id: 'default',
-    });
+    const [editingId, setEditingId] = useState(null);
+    const [form, setForm] = useState(emptyForm());
 
     useEffect(() => {
         Promise.all([get('/schedules/week'), get('/members')])
@@ -20,18 +23,48 @@ export default function ScheduleView() {
             .catch(console.error).finally(() => setLoading(false));
     }, []);
 
-    const createEvent = async (e) => {
+    const openNewForm = () => {
+        setEditingId(null);
+        setForm(emptyForm());
+        setShowForm(true);
+    };
+
+    const openEditForm = (event) => {
+        setEditingId(event.id);
+        setForm({
+            title: event.title || '',
+            date: event.date || new Date().toISOString().slice(0, 10),
+            start_time: event.start_time?.slice(0, 5) || '09:00',
+            end_time: event.end_time?.slice(0, 5) || '10:00',
+            event_type: event.event_type || 'other',
+            household_id: event.household_id || 'default',
+            assigned_member_ids: event.assigned_member_ids || [],
+        });
+        setShowForm(true);
+    };
+
+    const closeForm = () => {
+        setShowForm(false);
+        setEditingId(null);
+        setForm(emptyForm());
+    };
+
+    const submitForm = async (e) => {
         e.preventDefault();
         try {
-            await post('/schedules/events', {
+            const payload = {
                 ...form,
                 start_time: form.start_time + ':00',
                 end_time: form.end_time + ':00',
-            });
+            };
+            if (editingId) {
+                await put(`/schedules/events/${editingId}`, payload);
+            } else {
+                await post('/schedules/events', payload);
+            }
             const updated = await get('/schedules/week');
             setData(updated);
-            setShowForm(false);
-            setForm({ title: '', date: new Date().toISOString().slice(0, 10), start_time: '09:00', end_time: '10:00', event_type: 'other', household_id: 'default' });
+            closeForm();
         } catch (err) {
             alert(err.message);
         }
@@ -42,6 +75,7 @@ export default function ScheduleView() {
         try {
             await del(`/schedules/events/${id}`);
             setData(prev => ({ ...prev, events: prev.events.filter(e => e.id !== id) }));
+            if (editingId === id) closeForm();
         } catch (err) {
             alert(err.message);
         }
@@ -58,16 +92,19 @@ export default function ScheduleView() {
                     <h1 className="text-2xl font-bold text-surface-100">📅 Schedule</h1>
                 </div>
                 <button
-                    onClick={() => setShowForm(!showForm)}
+                    onClick={openNewForm}
                     className="px-4 py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors"
                 >
                     + New Event
                 </button>
             </div>
 
-            {/* Create form */}
+            {/* Create / Edit form */}
             {showForm && (
-                <form onSubmit={createEvent} className="bg-surface-800 rounded-2xl p-6 mb-6 space-y-4">
+                <form onSubmit={submitForm} className="bg-surface-800 rounded-2xl p-6 mb-6 space-y-4">
+                    <p className="text-sm font-medium text-surface-300">
+                        {editingId ? 'Edit Event' : 'New Event'}
+                    </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                             placeholder="Event title" required
@@ -85,11 +122,47 @@ export default function ScheduleView() {
                                 className="flex-1 bg-surface-700 text-surface-100 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-forest-500" />
                         </div>
                     </div>
+                    {members.length > 0 && (
+                        <div>
+                            <label className="block text-xs text-surface-400 mb-2">Assign Members</label>
+                            <div className="flex flex-wrap gap-2">
+                                {members.map(m => {
+                                    const selected = form.assigned_member_ids.includes(m.id);
+                                    return (
+                                        <button key={m.id} type="button"
+                                            onClick={() => setForm(f => ({
+                                                ...f,
+                                                assigned_member_ids: selected
+                                                    ? f.assigned_member_ids.filter(id => id !== m.id)
+                                                    : [...f.assigned_member_ids, m.id],
+                                            }))}
+                                            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all
+                                                ${selected
+                                                    ? 'bg-forest-600/30 border-2 border-forest-500 text-surface-100'
+                                                    : 'bg-surface-700 border-2 border-surface-600 text-surface-400 hover:border-surface-500'}`}
+                                        >
+                                            <span>{m.avatar || '👤'}</span>
+                                            <span>{m.name}</span>
+                                            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: m.color }} />
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                     <div className="flex gap-3 justify-end">
-                        <button type="button" onClick={() => setShowForm(false)}
+                        <button type="button" onClick={closeForm}
                             className="px-4 py-2 bg-surface-700 text-surface-300 rounded-xl text-sm">Cancel</button>
+                        {editingId && (
+                            <button type="button" onClick={() => deleteEvent(editingId)}
+                                className="px-4 py-2 bg-rose-600/20 border border-rose-600/30 text-rose-300 hover:bg-rose-600/30 rounded-xl text-sm font-medium transition-colors">
+                                Delete
+                            </button>
+                        )}
                         <button type="submit"
-                            className="px-4 py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium">Create</button>
+                            className="px-4 py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium">
+                            {editingId ? 'Save Changes' : 'Create'}
+                        </button>
                     </div>
                 </form>
             )}
@@ -103,8 +176,12 @@ export default function ScheduleView() {
                     ) : (
                         data.events.map((event) => (
                             <div key={event.id}
-                                className={`flex items-center gap-4 px-5 py-4 rounded-xl transition-colors ${event.is_protected ? 'bg-forest-900/30 border border-forest-700/30' : 'bg-surface-800'
-                                    }`}>
+                                onClick={() => openEditForm(event)}
+                                className={`flex items-center gap-4 px-5 py-4 rounded-xl transition-colors cursor-pointer
+                                    ${editingId === event.id ? 'ring-2 ring-forest-500' : ''}
+                                    ${event.is_protected
+                                        ? 'bg-forest-900/30 border border-forest-700/30 hover:bg-forest-900/40'
+                                        : 'bg-surface-800 hover:bg-surface-750'}`}>
                                 <span className="text-xl">{typeEmoji[event.event_type] || '📌'}</span>
                                 <div className="flex-1 min-w-0">
                                     <p className="font-medium text-surface-100 truncate">{event.title}</p>
@@ -129,7 +206,7 @@ export default function ScheduleView() {
                                     </div>
                                 )}
                                 {event.is_protected && <span className="text-forest-400 text-xs font-medium">Protected</span>}
-                                <button onClick={() => deleteEvent(event.id)}
+                                <button onClick={(e) => { e.stopPropagation(); deleteEvent(event.id); }}
                                     className="text-surface-500 hover:text-rose-400 transition-colors text-sm">✕</button>
                             </div>
                         ))

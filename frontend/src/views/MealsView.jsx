@@ -106,12 +106,17 @@ export default function MealsView() {
                             placeholder="Est. cost ($)" step="0.01"
                             className="bg-surface-700 text-surface-100 rounded-xl px-4 py-3 text-sm outline-none" />
                         <div className="flex gap-2">
-                            <input type="number" value={form.health_score} onChange={e => setForm(f => ({ ...f, health_score: e.target.value }))}
-                                min="1" max="10" placeholder="Health (1-10)"
-                                className="flex-1 bg-surface-700 text-surface-100 rounded-xl px-4 py-3 text-sm outline-none" />
-                            <input type="number" value={form.prep_time_min} onChange={e => setForm(f => ({ ...f, prep_time_min: e.target.value }))}
-                                placeholder="Prep (min)"
-                                className="flex-1 bg-surface-700 text-surface-100 rounded-xl px-4 py-3 text-sm outline-none" />
+                            <div className="flex-1">
+                                <label className="block text-xs text-surface-400 mb-1">Health Score (1-10)</label>
+                                <input type="number" value={form.health_score} onChange={e => setForm(f => ({ ...f, health_score: e.target.value }))}
+                                    min="1" max="10"
+                                    className="w-full bg-surface-700 text-surface-100 rounded-xl px-4 py-3 text-sm outline-none" />
+                            </div>
+                            <div className="flex-1">
+                                <label className="block text-xs text-surface-400 mb-1">Prep Time (minutes)</label>
+                                <input type="number" value={form.prep_time_min} onChange={e => setForm(f => ({ ...f, prep_time_min: e.target.value }))}
+                                    className="w-full bg-surface-700 text-surface-100 rounded-xl px-4 py-3 text-sm outline-none" />
+                            </div>
                         </div>
                     </div>
                     <div className="flex gap-3 justify-end">
