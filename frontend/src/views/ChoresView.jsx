@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { get, post } from '../hooks/useApi';
+import PresetBrowser from '../components/PresetBrowser';
+import { CHORE_PRESETS } from '../data/chorePresets';
 
 export default function ChoresView() {
     const navigate = useNavigate();
@@ -10,6 +12,7 @@ export default function ChoresView() {
     const [allChores, setAllChores] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
+    const [showPresets, setShowPresets] = useState(false);
     const [form, setForm] = useState({
         title: '', points: 5, frequency: 'daily', assigned_member_ids: [],
     });
@@ -66,6 +69,19 @@ export default function ChoresView() {
     const memberStatus = choreStatus.members?.find(m => m.member_id === selectedMember);
     const frequencies = ['daily', 'weekly', 'as_needed'];
 
+    const addFromPreset = async (preset) => {
+        await post('/chores', {
+            household_id: 'default',
+            title: preset.title,
+            points: preset.points,
+            frequency: preset.frequency,
+            assigned_member_ids: preset.assigned_member_ids || [],
+        });
+        const [s, c] = await Promise.all([get('/chores/status'), get('/chores')]);
+        setChoreStatus(s);
+        setAllChores(c);
+    };
+
     const toggleMemberAssignment = (memberId) => {
         setForm(f => {
             const ids = f.assigned_member_ids.includes(memberId)
@@ -82,10 +98,16 @@ export default function ChoresView() {
                     <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200">&larr;</button>
                     <h1 className="text-2xl font-bold text-surface-100">🧹 Chore Board</h1>
                 </div>
-                <button onClick={() => setShowForm(!showForm)}
-                    className="px-4 py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors">
-                    + New Chore
-                </button>
+                <div className="flex gap-2">
+                    <button onClick={() => setShowPresets(true)}
+                        className="px-4 py-2 bg-ocean-600/20 border border-ocean-600/30 text-ocean-300 hover:bg-ocean-600/30 rounded-xl text-sm font-medium transition-colors">
+                        Browse Presets
+                    </button>
+                    <button onClick={() => setShowForm(!showForm)}
+                        className="px-4 py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors">
+                        + New Chore
+                    </button>
+                </div>
             </div>
 
             {/* Member tabs */}
@@ -189,6 +211,10 @@ export default function ChoresView() {
                         ))}
                     </div>
                 </>
+            )}
+            {showPresets && (
+                <PresetBrowser type="chore" presets={CHORE_PRESETS} members={members}
+                    onAdd={addFromPreset} onClose={() => setShowPresets(false)} />
             )}
         </div>
     );

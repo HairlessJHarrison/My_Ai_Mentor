@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useHousehold } from '../context/HouseholdContext';
 import { post } from '../hooks/useApi';
 import ScheduleCard from './ScheduleCard';
@@ -10,6 +11,7 @@ import ChoreCard from './ChoreCard';
 import OnboardingWizard from './OnboardingWizard';
 
 export default function Dashboard() {
+    const navigate = useNavigate();
     const { config, connected, loading, members, refresh, setPresence } = useHousehold();
     const [startingSession, setStartingSession] = useState(false);
     const [showUnplugDialog, setShowUnplugDialog] = useState(false);
@@ -64,6 +66,10 @@ export default function Dashboard() {
                         <p className="text-surface-400 text-sm mt-1">{today}</p>
                     </div>
                     <div className="flex items-center gap-3">
+                        <button onClick={() => navigate('/calendar')}
+                            className="px-4 py-2 bg-ocean-600/20 border border-ocean-600/30 text-ocean-300 hover:bg-ocean-600/30 rounded-xl text-sm font-medium transition-colors">
+                            📆 Calendar
+                        </button>
                         <span className={`w-2 h-2 rounded-full ${connected ? 'bg-forest-400' : 'bg-rose-400'}`} />
                         <span className="text-xs text-surface-500">{connected ? 'Live' : 'Offline'}</span>
                     </div>

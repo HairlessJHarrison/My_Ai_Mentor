@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { get, post, del } from '../hooks/useApi';
+import { get, post, put, del } from '../hooks/useApi';
+import PresetBrowser from '../components/PresetBrowser';
+import { MEAL_PRESETS } from '../data/mealPresets';
+
+const emptyForm = () => ({
+    date: new Date().toISOString().slice(0, 10), meal_type: 'dinner',
+    recipe_name: '', ingredients: '', est_cost: '', health_score: 7,
+    prep_time_min: 30, household_id: 'default',
+});
 
 export default function MealsView() {
     const navigate = useNavigate();
@@ -8,16 +16,44 @@ export default function MealsView() {
     const [grocery, setGrocery] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
+    const [editingId, setEditingId] = useState(null);
+    const [showPresets, setShowPresets] = useState(false);
     const [showGrocery, setShowGrocery] = useState(false);
-    const [form, setForm] = useState({
-        date: new Date().toISOString().slice(0, 10), meal_type: 'dinner',
-        recipe_name: '', ingredients: '', est_cost: '', health_score: 7,
-        prep_time_min: 30, household_id: 'default',
-    });
+    const [members, setMembers] = useState([]);
+    const [form, setForm] = useState(emptyForm());
 
     useEffect(() => {
-        get('/meals/plan?week=current').then(setMeals).catch(console.error).finally(() => setLoading(false));
+        Promise.all([get('/meals/plan?week=current'), get('/members')])
+            .then(([m, mem]) => { setMeals(m); setMembers(mem); })
+            .catch(console.error).finally(() => setLoading(false));
     }, []);
+
+    const openNewForm = () => {
+        setEditingId(null);
+        setForm(emptyForm());
+        setShowForm(true);
+    };
+
+    const openEditForm = (meal) => {
+        setEditingId(meal.id);
+        setForm({
+            date: meal.date || new Date().toISOString().slice(0, 10),
+            meal_type: meal.meal_type || 'dinner',
+            recipe_name: meal.recipe_name || '',
+            ingredients: (meal.ingredients || []).join(', '),
+            est_cost: meal.est_cost ?? '',
+            health_score: meal.health_score ?? 7,
+            prep_time_min: meal.prep_time_min ?? 30,
+            household_id: meal.household_id || 'default',
+        });
+        setShowForm(true);
+    };
+
+    const closeForm = () => {
+        setShowForm(false);
+        setEditingId(null);
+        setForm(emptyForm());
+    };
 
     const loadGrocery = async () => {
         try {
@@ -27,26 +63,47 @@ export default function MealsView() {
         } catch (e) { console.error(e); }
     };
 
-    const createMeal = async (e) => {
+    const submitForm = async (e) => {
         e.preventDefault();
         try {
-            await post('/meals/plan', {
+            const payload = {
                 ...form,
                 ingredients: form.ingredients.split(',').map(s => s.trim()).filter(Boolean),
                 est_cost: parseFloat(form.est_cost) || 0,
                 health_score: parseInt(form.health_score),
                 prep_time_min: parseInt(form.prep_time_min),
-            });
+            };
+            if (editingId) {
+                await put(`/meals/plan/${editingId}`, payload);
+            } else {
+                await post('/meals/plan', payload);
+            }
             const updated = await get('/meals/plan?week=current');
             setMeals(updated);
-            setShowForm(false);
+            closeForm();
         } catch (err) { alert(err.message); }
+    };
+
+    const addFromPreset = async (preset) => {
+        await post('/meals/plan', {
+            household_id: 'default',
+            date: preset.date || new Date().toISOString().slice(0, 10),
+            meal_type: preset.meal_type,
+            recipe_name: preset.recipe_name,
+            ingredients: Array.isArray(preset.ingredients) ? preset.ingredients : preset.ingredients.split(',').map(s => s.trim()),
+            est_cost: parseFloat(preset.est_cost) || 0,
+            health_score: parseInt(preset.health_score),
+            prep_time_min: parseInt(preset.prep_time_min),
+        });
+        const updated = await get('/meals/plan?week=current');
+        setMeals(updated);
     };
 
     const deleteMeal = async (id) => {
         if (!confirm('Delete this meal?')) return;
         await del(`/meals/plan/${id}`);
         setMeals(prev => ({ ...prev, meals: prev.meals.filter(m => m.id !== id) }));
+        if (editingId === id) closeForm();
     };
 
     const mealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
@@ -64,7 +121,11 @@ export default function MealsView() {
                         className="px-4 py-2 bg-amber-600/20 border border-amber-600/30 text-amber-300 hover:bg-amber-600/30 rounded-xl text-sm font-medium transition-colors">
                         🛒 Grocery List
                     </button>
-                    <button onClick={() => setShowForm(!showForm)}
+                    <button onClick={() => setShowPresets(true)}
+                        className="px-4 py-2 bg-ocean-600/20 border border-ocean-600/30 text-ocean-300 hover:bg-ocean-600/30 rounded-xl text-sm font-medium transition-colors">
+                        Browse Presets
+                    </button>
+                    <button onClick={openNewForm}
                         className="px-4 py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors">
                         + Add Meal
                     </button>
@@ -88,7 +149,10 @@ export default function MealsView() {
             </div>
 
             {showForm && (
-                <form onSubmit={createMeal} className="bg-surface-800 rounded-2xl p-6 mb-6 space-y-4">
+                <form onSubmit={submitForm} className="bg-surface-800 rounded-2xl p-6 mb-6 space-y-4">
+                    <p className="text-sm font-medium text-surface-300">
+                        {editingId ? 'Edit Meal' : 'New Meal'}
+                    </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <input value={form.recipe_name} onChange={e => setForm(f => ({ ...f, recipe_name: e.target.value }))}
                             placeholder="Recipe name" required
@@ -120,8 +184,17 @@ export default function MealsView() {
                         </div>
                     </div>
                     <div className="flex gap-3 justify-end">
-                        <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 bg-surface-700 text-surface-300 rounded-xl text-sm">Cancel</button>
-                        <button type="submit" className="px-4 py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium">Create</button>
+                        <button type="button" onClick={closeForm} className="px-4 py-2 bg-surface-700 text-surface-300 rounded-xl text-sm">Cancel</button>
+                        {editingId && (
+                            <button type="button" onClick={() => deleteMeal(editingId)}
+                                className="px-4 py-2 bg-rose-600/20 border border-rose-600/30 text-rose-300 hover:bg-rose-600/30 rounded-xl text-sm font-medium transition-colors">
+                                Delete
+                            </button>
+                        )}
+                        <button type="submit"
+                            className="px-4 py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium">
+                            {editingId ? 'Save Changes' : 'Create'}
+                        </button>
                     </div>
                 </form>
             )}
@@ -133,7 +206,10 @@ export default function MealsView() {
                     {meals.meals?.length === 0 ? (
                         <div className="text-center py-12 text-surface-400">No meals planned. Add one above!</div>
                     ) : meals.meals.map((meal) => (
-                        <div key={meal.id} className="flex items-center gap-4 px-5 py-4 bg-surface-800 rounded-xl">
+                        <div key={meal.id}
+                            onClick={() => openEditForm(meal)}
+                            className={`flex items-center gap-4 px-5 py-4 rounded-xl transition-colors cursor-pointer
+                                ${editingId === meal.id ? 'ring-2 ring-forest-500 bg-surface-800' : 'bg-surface-800 hover:bg-surface-750'}`}>
                             <span className="text-xl">{typeEmoji[meal.meal_type] || '🍽️'}</span>
                             <div className="flex-1 min-w-0">
                                 <p className="font-medium text-surface-100 truncate">{meal.recipe_name}</p>
@@ -143,10 +219,16 @@ export default function MealsView() {
                                 </p>
                             </div>
                             <span className="text-xs text-forest-400 font-medium">{meal.health_score}/10</span>
-                            <button onClick={() => deleteMeal(meal.id)} className="text-surface-500 hover:text-rose-400 text-sm">✕</button>
+                            <button onClick={(e) => { e.stopPropagation(); deleteMeal(meal.id); }}
+                                className="text-surface-500 hover:text-rose-400 transition-colors text-sm">✕</button>
                         </div>
                     ))}
                 </div>
+            )}
+
+            {showPresets && (
+                <PresetBrowser type="meal" presets={MEAL_PRESETS} members={members}
+                    onAdd={addFromPreset} onClose={() => setShowPresets(false)} />
             )}
 
             {/* Grocery list modal */}

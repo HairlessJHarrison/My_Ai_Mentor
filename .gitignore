@@ -9,6 +9,8 @@ build/
 .eggs/
 venv/
 .env
+.coverage
+htmlcov/
 
 # SQLite database
 backend/data/*.db
