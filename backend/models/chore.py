@@ -11,7 +11,10 @@ class ChoreBase(SQLModel):
     title: str = Field(description="Chore name, e.g. 'Make bed', 'Wash dishes', 'Take out trash'")
     points: int = Field(description="Points earned for completing this chore")
     assigned_member_ids: list[int] = Field(default=[], sa_column=Column(JSON), description="Member IDs this chore is assigned to (empty = anyone)")
-    frequency: str = Field(default="daily", description="How often this chore resets: daily, weekly, as_needed", sa_column=Column(String))
+    frequency: str = Field(default="daily", description="How often this chore resets: daily, weekly, biweekly, monthly, as_needed", sa_column=Column(String))
+    schedule_day: int | None = Field(default=None, description="Day of week 0=Mon..6=Sun for weekly/biweekly/monthly")
+    schedule_week_of_month: int | None = Field(default=None, description="1st/2nd/3rd/4th occurrence for monthly frequency")
+    schedule_anchor_date: str | None = Field(default=None, description="Anchor date (YYYY-MM-DD) for biweekly calculation")
     is_active: bool = Field(default=True, description="Whether this chore is currently active")
 
 
@@ -27,14 +30,20 @@ class ChoreCreate(SQLModel):
     title: str = Field(description="Chore name")
     points: int = Field(description="Points earned for completing this chore")
     assigned_member_ids: list[int] = Field(default=[], description="Member IDs this chore is assigned to")
-    frequency: Literal["daily", "weekly", "as_needed"] = Field(default="daily", description="How often this chore resets")
+    frequency: Literal["daily", "weekly", "biweekly", "monthly", "as_needed"] = Field(default="daily", description="How often this chore resets")
+    schedule_day: int | None = Field(default=None, description="Day of week 0=Mon..6=Sun")
+    schedule_week_of_month: int | None = Field(default=None, description="1st/2nd/3rd/4th occurrence for monthly")
+    schedule_anchor_date: str | None = Field(default=None, description="Anchor date for biweekly calculation")
 
 
 class ChoreUpdate(SQLModel):
     title: str | None = None
     points: int | None = None
     assigned_member_ids: list[int] | None = None
-    frequency: Literal["daily", "weekly", "as_needed"] | None = None
+    frequency: Literal["daily", "weekly", "biweekly", "monthly", "as_needed"] | None = None
+    schedule_day: int | None = None
+    schedule_week_of_month: int | None = None
+    schedule_anchor_date: str | None = None
     is_active: bool | None = None
 
 

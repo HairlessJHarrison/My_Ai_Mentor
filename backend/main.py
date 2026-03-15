@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
-from database import create_db_and_tables
+from database import create_db_and_tables, migrate_chore_schedule_columns
 from websocket import manager
 
 # Import all models so SQLModel registers them
@@ -32,6 +32,7 @@ START_TIME = time.time()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
+    migrate_chore_schedule_columns()
     yield
 
 

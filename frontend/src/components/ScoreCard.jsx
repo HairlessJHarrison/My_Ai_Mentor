@@ -46,10 +46,10 @@ export default function ScoreCard() {
 
             {/* Member selector */}
             {members?.length > 1 && (
-                <div className="flex gap-1.5 mb-3 overflow-x-auto" onClick={e => e.stopPropagation()}>
+                <div className="flex gap-2 mb-3 overflow-x-auto" onClick={e => e.stopPropagation()}>
                     {members.map(m => (
                         <button key={m.id} onClick={() => setSelectedMember(m.id)}
-                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${selectedMember === m.id
+                            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors min-h-[36px] active:scale-[0.97] ${selectedMember === m.id
                                 ? 'bg-forest-600/30 text-forest-300'
                                 : 'bg-surface-700/50 text-surface-400 hover:text-surface-300'
                             }`}>
@@ -112,7 +112,7 @@ export default function ScoreCard() {
             {activities.length > 0 && !memberScore && (
                 <div className="space-y-1">
                     {activities.slice(-3).map((act, i) => (
-                        <div key={act.id || i} className="flex justify-between text-xs px-2 py-1 bg-surface-700/40 rounded-md">
+                        <div key={act.id || i} className="flex justify-between text-sm px-3 py-2 bg-surface-700/40 rounded-lg">
                             <span className="text-surface-300 capitalize">{act.activity_type?.replace(/_/g, ' ')}</span>
                             <span className="text-amber-400">+{act.points_earned} pts</span>
                         </div>

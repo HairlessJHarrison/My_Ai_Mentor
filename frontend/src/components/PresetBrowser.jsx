@@ -149,7 +149,7 @@ export default function PresetBrowser({ type, presets, members, onAdd, onClose }
           <h2 className="text-xl font-bold text-surface-100">
             {type === 'chore' ? '🧹 Chore Presets' : '🍽️ Meal Presets'}
           </h2>
-          <button onClick={onClose} className="text-surface-400 hover:text-surface-200 text-lg">✕</button>
+          <button onClick={onClose} className="text-surface-400 hover:text-surface-200 text-lg w-11 h-11 flex items-center justify-center rounded-xl hover:bg-surface-700 active:scale-[0.95]">✕</button>
         </div>
 
         {/* Search */}
@@ -168,7 +168,7 @@ export default function PresetBrowser({ type, presets, members, onAdd, onClose }
             <div className="w-8 flex-shrink-0">
               <input type="checkbox" checked={selectedIds.size === sorted.length && sorted.length > 0}
                 onChange={toggleSelectAll}
-                className="accent-forest-500" />
+                className="accent-forest-500 w-5 h-5" />
             </div>
             {columns.map(col => (
               <button key={col.key}
@@ -188,7 +188,7 @@ export default function PresetBrowser({ type, presets, members, onAdd, onClose }
           {/* Rows */}
           {sorted.map(preset => (
             <div key={preset.id}>
-              <div className={`flex items-center gap-2 px-3 py-3 text-sm rounded-xl transition-colors ${
+              <div className={`flex items-center gap-2 px-3 py-3.5 text-sm rounded-xl transition-colors ${
                 addedIds.has(preset.id)
                   ? 'bg-forest-600/10 text-surface-400'
                   : editingId === preset.id
@@ -199,7 +199,7 @@ export default function PresetBrowser({ type, presets, members, onAdd, onClose }
                   <input type="checkbox"
                     checked={selectedIds.has(preset.id)}
                     onChange={() => toggleSelect(preset.id)}
-                    className="accent-forest-500" />
+                    className="accent-forest-500 w-5 h-5" />
                 </div>
                 {columns.map(col => (
                   <div key={col.key}
@@ -215,13 +215,13 @@ export default function PresetBrowser({ type, presets, members, onAdd, onClose }
                   ) : (
                     <>
                       <button onClick={() => editingId === preset.id ? cancelEdit() : startEdit(preset)}
-                        className="px-2 py-1 text-xs text-surface-400 hover:text-surface-200 transition-colors"
+                        className="px-3 py-2.5 text-sm text-surface-400 hover:text-surface-200 transition-colors min-h-[44px] active:scale-[0.97]"
                         title="Edit before adding">
                         ✏️
                       </button>
                       <button onClick={() => addSingle(preset)}
                         disabled={adding}
-                        className="px-2 py-1 text-xs bg-forest-600 hover:bg-forest-500 text-white rounded-lg transition-colors disabled:opacity-50">
+                        className="px-3 py-2.5 text-sm bg-forest-600 hover:bg-forest-500 text-white rounded-lg transition-colors disabled:opacity-50 min-h-[44px] active:scale-[0.97]">
                         Add
                       </button>
                     </>
@@ -311,7 +311,7 @@ export default function PresetBrowser({ type, presets, members, onAdd, onClose }
                       <div className="flex gap-2 flex-wrap">
                         {members.map(m => (
                           <button key={m.id} type="button" onClick={() => toggleMemberAssignment(m.id)}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm transition-colors min-h-[44px] active:scale-[0.97] ${
                               editForm.assigned_member_ids?.includes(m.id)
                                 ? 'bg-forest-600 text-white'
                                 : 'bg-surface-700 text-surface-300 hover:bg-surface-600'
@@ -326,11 +326,11 @@ export default function PresetBrowser({ type, presets, members, onAdd, onClose }
 
                   <div className="flex gap-3 justify-end">
                     <button onClick={cancelEdit}
-                      className="px-4 py-2 bg-surface-700 text-surface-300 rounded-xl text-sm">
+                      className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[44px] active:scale-[0.97]">
                       Cancel
                     </button>
                     <button onClick={addFromEdit} disabled={adding}
-                      className="px-4 py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium disabled:opacity-50">
+                      className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium disabled:opacity-50 min-h-[44px] active:scale-[0.97]">
                       Save & Add
                     </button>
                   </div>
@@ -353,12 +353,12 @@ export default function PresetBrowser({ type, presets, members, onAdd, onClose }
           </p>
           <div className="flex gap-3">
             <button onClick={onClose}
-              className="px-4 py-2 bg-surface-700 text-surface-300 rounded-xl text-sm">
+              className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[44px] active:scale-[0.97]">
               Close
             </button>
             {selectedIds.size > 0 && (
               <button onClick={bulkAdd} disabled={adding}
-                className="px-4 py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium disabled:opacity-50">
+                className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium disabled:opacity-50 min-h-[44px] active:scale-[0.97]">
                 {adding ? 'Adding...' : `Add Selected (${selectedIds.size})`}
               </button>
             )}

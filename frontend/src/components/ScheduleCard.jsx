@@ -27,12 +27,12 @@ export default function ScheduleCard() {
                     {events.map((event, i) => (
                         <div
                             key={event.id || i}
-                            className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${event.is_protected
+                            className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm ${event.is_protected
                                     ? 'bg-forest-900/40 border border-forest-600/30'
                                     : 'bg-surface-700/60'
                                 }`}
                         >
-                            <span className="text-xs text-surface-400 font-mono w-20 shrink-0">
+                            <span className="text-sm text-surface-400 font-mono w-24 shrink-0">
                                 {event.start_time?.slice(0, 5)} – {event.end_time?.slice(0, 5)}
                             </span>
                             <span className="truncate">{event.title}</span>
@@ -51,7 +51,7 @@ export default function ScheduleCard() {
                     </p>
                     <div className="flex gap-2 flex-wrap">
                         {freeBlocks.slice(0, 3).map((b, i) => (
-                            <span key={i} className="text-xs bg-forest-900/30 text-forest-300 px-2 py-1 rounded-md">
+                            <span key={i} className="text-sm bg-forest-900/30 text-forest-300 px-3 py-2 rounded-lg">
                                 {b.start?.slice(0, 5)} – {b.end?.slice(0, 5)} ({b.duration_min}m)
                             </span>
                         ))}

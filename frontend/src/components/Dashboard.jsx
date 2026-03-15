@@ -67,7 +67,7 @@ export default function Dashboard() {
                     </div>
                     <div className="flex items-center gap-3">
                         <button onClick={() => navigate('/calendar')}
-                            className="px-4 py-2 bg-ocean-600/20 border border-ocean-600/30 text-ocean-300 hover:bg-ocean-600/30 rounded-xl text-sm font-medium transition-colors">
+                            className="px-4 py-2.5 bg-ocean-600/20 border border-ocean-600/30 text-ocean-300 hover:bg-ocean-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
                             📆 Calendar
                         </button>
                         <span className={`w-2 h-2 rounded-full ${connected ? 'bg-forest-400' : 'bg-rose-400'}`} />
@@ -127,7 +127,7 @@ export default function Dashboard() {
                                 <button
                                     key={mins}
                                     onClick={() => setDuration(mins)}
-                                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${duration === mins
+                                    className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all min-h-[44px] active:scale-[0.97] ${duration === mins
                                             ? 'bg-forest-600 text-white'
                                             : 'bg-surface-700 text-surface-300 hover:bg-surface-600'
                                         }`}
@@ -140,14 +140,14 @@ export default function Dashboard() {
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setShowUnplugDialog(false)}
-                                className="flex-1 py-3 bg-surface-700 hover:bg-surface-600 text-surface-300 rounded-xl text-sm font-medium transition-colors"
+                                className="flex-1 py-3 bg-surface-700 hover:bg-surface-600 text-surface-300 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={startUnplugged}
                                 disabled={startingSession}
-                                className="flex-1 py-3 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-semibold transition-colors
+                                className="flex-1 py-3 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-semibold transition-colors min-h-[44px] active:scale-[0.97]
                            disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {startingSession ? 'Starting...' : '🌿 Start'}

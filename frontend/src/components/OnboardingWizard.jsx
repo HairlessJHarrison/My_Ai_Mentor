@@ -211,7 +211,7 @@ export default function OnboardingWizard({ onComplete }) {
                         </div>
                         <span className="w-3 h-3 rounded-full" style={{ backgroundColor: m.color }} />
                       </div>
-                      <button onClick={() => editMember(i)} className="text-surface-400 hover:text-surface-200 text-sm">
+                      <button onClick={() => editMember(i)} className="text-surface-400 hover:text-surface-200 text-sm px-3 py-2 min-h-[44px] flex items-center rounded-xl active:scale-[0.97]">
                         Edit
                       </button>
                     </div>
@@ -264,12 +264,12 @@ export default function OnboardingWizard({ onComplete }) {
                 {/* Avatar picker */}
                 <div>
                   <label className="block text-xs text-surface-400 mb-1.5">Avatar</label>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-2">
                     {AVATARS.map((av) => (
                       <button
                         key={av}
                         onClick={() => setMemberForm((f) => ({ ...f, avatar: av }))}
-                        className={`w-9 h-9 rounded-lg text-lg flex items-center justify-center transition-all
+                        className={`w-11 h-11 rounded-xl text-xl flex items-center justify-center transition-all active:scale-[0.95]
                           ${memberForm.avatar === av
                             ? 'bg-forest-600/40 ring-2 ring-forest-400 scale-110'
                             : 'bg-surface-700 hover:bg-surface-600'}`}
@@ -283,12 +283,12 @@ export default function OnboardingWizard({ onComplete }) {
                 {/* Color picker */}
                 <div>
                   <label className="block text-xs text-surface-400 mb-1.5">Color</label>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2.5">
                     {COLORS.map((c) => (
                       <button
                         key={c}
                         onClick={() => setMemberForm((f) => ({ ...f, color: c }))}
-                        className={`w-8 h-8 rounded-full transition-all ${memberForm.color === c ? 'ring-2 ring-offset-2 ring-offset-surface-800 ring-forest-400 scale-110' : 'hover:scale-110'}`}
+                        className={`w-11 h-11 rounded-full transition-all active:scale-[0.95] ${memberForm.color === c ? 'ring-2 ring-offset-2 ring-offset-surface-800 ring-forest-400 scale-110' : 'hover:scale-110'}`}
                         style={{ backgroundColor: c }}
                       />
                     ))}
@@ -300,7 +300,7 @@ export default function OnboardingWizard({ onComplete }) {
                 <div className="flex gap-2">
                   {editingIdx !== null && (
                     <button onClick={cancelEdit}
-                      className="flex-1 py-2.5 bg-surface-600 hover:bg-surface-500 text-surface-300 rounded-xl text-sm font-medium transition-colors">
+                      className="flex-1 py-2.5 bg-surface-600 hover:bg-surface-500 text-surface-300 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
                       Cancel
                     </button>
                   )}
@@ -308,7 +308,7 @@ export default function OnboardingWizard({ onComplete }) {
                     onClick={saveMember}
                     disabled={saving}
                     className="flex-1 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-semibold
-                      transition-colors disabled:opacity-50"
+                      transition-colors disabled:opacity-50 min-h-[44px] active:scale-[0.97]"
                   >
                     {saving ? 'Saving...' : editingIdx !== null ? 'Update' : 'Add Member'}
                   </button>
@@ -371,8 +371,8 @@ export default function OnboardingWizard({ onComplete }) {
                       ) : (
                         <button
                           onClick={() => connectCalendar(m)}
-                          className="px-4 py-2 bg-surface-600 hover:bg-surface-500 text-surface-200 rounded-lg text-sm
-                            font-medium transition-colors flex items-center gap-2"
+                          className="px-4 py-2.5 bg-surface-600 hover:bg-surface-500 text-surface-200 rounded-xl text-sm
+                            font-medium transition-colors flex items-center gap-2 min-h-[44px] active:scale-[0.97]"
                         >
                           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M19.5 3h-15A1.5 1.5 0 003 4.5v15A1.5 1.5 0 004.5 21h15a1.5 1.5 0 001.5-1.5v-15A1.5 1.5 0 0019.5 3zM12 17.25a.75.75 0 01-.75-.75v-3.75H7.5a.75.75 0 010-1.5h3.75V7.5a.75.75 0 011.5 0v3.75h3.75a.75.75 0 010 1.5h-3.75v3.75a.75.75 0 01-.75.75z" />

@@ -56,9 +56,9 @@ export default function ChoreCard() {
             </div>
 
             {uncompleted.length > 0 && (
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                     {uncompleted.slice(0, 3).map((chore, i) => (
-                        <div key={chore.id || i} className="flex justify-between text-xs px-2 py-1 bg-surface-700/40 rounded-md">
+                        <div key={chore.id || i} className="flex justify-between text-sm px-3 py-2.5 bg-surface-700/40 rounded-lg">
                             <span className="text-surface-300">{chore.title}</span>
                             <span className="text-amber-400">+{chore.points} pts</span>
                         </div>

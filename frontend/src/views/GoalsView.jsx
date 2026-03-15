@@ -74,11 +74,11 @@ export default function GoalsView() {
         <div className="min-h-screen p-4 md:p-8 max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200">&larr;</button>
+                    <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200 p-2 -ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl active:scale-[0.97]">&larr;</button>
                     <h1 className="text-2xl font-bold text-surface-100">🎯 Personal Goals</h1>
                 </div>
                 <button onClick={() => setShowForm(!showForm)}
-                    className="px-4 py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors">
+                    className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
                     + New Goal
                 </button>
             </div>
@@ -87,7 +87,7 @@ export default function GoalsView() {
             <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
                 {members.map(m => (
                     <button key={m.id} onClick={() => setSelectedMember(m.id)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${selectedMember === m.id
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-colors min-h-[44px] active:scale-[0.97] ${selectedMember === m.id
                             ? 'bg-forest-600 text-white'
                             : 'bg-surface-800 text-surface-300 hover:bg-surface-700'
                         }`}>
@@ -117,8 +117,8 @@ export default function GoalsView() {
                             className="bg-surface-700 text-surface-100 rounded-xl px-4 py-3 text-sm outline-none" />
                     </div>
                     <div className="flex gap-3 justify-end">
-                        <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 bg-surface-700 text-surface-300 rounded-xl text-sm">Cancel</button>
-                        <button type="submit" className="px-4 py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium">Create Goal</button>
+                        <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[44px] active:scale-[0.97]">Cancel</button>
+                        <button type="submit" className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium min-h-[44px] active:scale-[0.97]">Create Goal</button>
                     </div>
                 </form>
             )}
@@ -137,7 +137,7 @@ export default function GoalsView() {
                                     <span className="text-xl">{catEmoji[goal.category] || '⭐'}</span>
                                     <div>
                                         <p className="text-surface-100 font-medium">{goal.title}</p>
-                                        <div className="flex items-center gap-2 text-xs text-surface-400 mt-0.5">
+                                        <div className="flex items-center gap-2 text-sm text-surface-400 mt-0.5">
                                             <span className="capitalize">{goal.category}</span>
                                             <span>·</span>
                                             <span>{goal.target_frequency}</span>
@@ -153,7 +153,7 @@ export default function GoalsView() {
                                         </span>
                                     )}
                                     <button onClick={() => completeGoal(goal.id)}
-                                        className="px-3 py-1.5 bg-forest-600/20 hover:bg-forest-600 text-forest-400 hover:text-white rounded-lg text-sm font-medium transition-colors">
+                                        className="px-4 py-2.5 bg-forest-600/20 hover:bg-forest-600 text-forest-400 hover:text-white rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
                                         Done
                                     </button>
                                 </div>

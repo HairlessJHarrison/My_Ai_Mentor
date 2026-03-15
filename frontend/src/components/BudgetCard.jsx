@@ -50,7 +50,7 @@ export default function BudgetCard() {
                     {/* Top categories */}
                     <div className="space-y-2">
                         {categories.slice(0, 4).map((cat, i) => (
-                            <div key={i} className="flex items-center justify-between text-xs">
+                            <div key={i} className="flex items-center justify-between text-sm py-1">
                                 <span className="text-surface-300 capitalize">{cat.category}</span>
                                 <div className="flex items-center gap-2">
                                     <div className="w-20 h-1.5 bg-surface-700 rounded-full overflow-hidden">

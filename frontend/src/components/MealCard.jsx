@@ -34,9 +34,9 @@ export default function MealCard() {
             ) : (
                 <div className="space-y-2">
                     {mealList.slice(0, 4).map((meal, i) => (
-                        <div key={meal.id || i} className="flex items-center justify-between px-3 py-2 bg-surface-700/60 rounded-lg text-sm">
+                        <div key={meal.id || i} className="flex items-center justify-between px-3 py-3 bg-surface-700/60 rounded-lg text-sm">
                             <div className="flex items-center gap-2">
-                                <span className="text-xs text-amber-400 uppercase font-medium w-14">{meal.meal_type}</span>
+                                <span className="text-sm text-amber-400 uppercase font-medium w-14">{meal.meal_type}</span>
                                 <span className="truncate">{meal.recipe_name}</span>
                             </div>
                             <span className="text-xs text-surface-400">{meal.prep_time_min}m</span>
@@ -46,7 +46,7 @@ export default function MealCard() {
             )}
 
             {meals?.total_cost > 0 && (
-                <div className="mt-3 pt-3 border-t border-surface-700 flex justify-between text-xs">
+                <div className="mt-3 pt-3 border-t border-surface-700 flex justify-between text-sm">
                     <span className="text-surface-400">Week total</span>
                     <span className="text-amber-300 font-medium">${meals.total_cost.toFixed(2)}</span>
                 </div>

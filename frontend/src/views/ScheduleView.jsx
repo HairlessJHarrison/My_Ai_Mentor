@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { get, post, put, del } from '../hooks/useApi';
 
@@ -15,6 +15,7 @@ export default function ScheduleView() {
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState(null);
+    const formRef = useRef(null);
     const [form, setForm] = useState(emptyForm());
 
     useEffect(() => {
@@ -23,10 +24,13 @@ export default function ScheduleView() {
             .catch(console.error).finally(() => setLoading(false));
     }, []);
 
+    const scrollToForm = () => setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+
     const openNewForm = () => {
         setEditingId(null);
         setForm(emptyForm());
         setShowForm(true);
+        scrollToForm();
     };
 
     const openEditForm = (event) => {
@@ -41,6 +45,7 @@ export default function ScheduleView() {
             assigned_member_ids: event.assigned_member_ids || [],
         });
         setShowForm(true);
+        scrollToForm();
     };
 
     const closeForm = () => {
@@ -88,12 +93,12 @@ export default function ScheduleView() {
         <div className="min-h-screen p-4 md:p-8 max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200 transition-colors">&larr;</button>
+                    <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200 transition-colors p-2 -ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl active:scale-[0.97]">&larr;</button>
                     <h1 className="text-2xl font-bold text-surface-100">📅 Schedule</h1>
                 </div>
                 <button
                     onClick={openNewForm}
-                    className="px-4 py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors"
+                    className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]"
                 >
                     + New Event
                 </button>
@@ -101,7 +106,7 @@ export default function ScheduleView() {
 
             {/* Create / Edit form */}
             {showForm && (
-                <form onSubmit={submitForm} className="bg-surface-800 rounded-2xl p-6 mb-6 space-y-4">
+                <form ref={formRef} onSubmit={submitForm} className="bg-surface-800 rounded-2xl p-6 mb-6 space-y-4">
                     <p className="text-sm font-medium text-surface-300">
                         {editingId ? 'Edit Event' : 'New Event'}
                     </p>
@@ -136,7 +141,7 @@ export default function ScheduleView() {
                                                     ? f.assigned_member_ids.filter(id => id !== m.id)
                                                     : [...f.assigned_member_ids, m.id],
                                             }))}
-                                            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all
+                                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all min-h-[44px] active:scale-[0.97]
                                                 ${selected
                                                     ? 'bg-forest-600/30 border-2 border-forest-500 text-surface-100'
                                                     : 'bg-surface-700 border-2 border-surface-600 text-surface-400 hover:border-surface-500'}`}
@@ -152,15 +157,15 @@ export default function ScheduleView() {
                     )}
                     <div className="flex gap-3 justify-end">
                         <button type="button" onClick={closeForm}
-                            className="px-4 py-2 bg-surface-700 text-surface-300 rounded-xl text-sm">Cancel</button>
+                            className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[44px] active:scale-[0.97]">Cancel</button>
                         {editingId && (
                             <button type="button" onClick={() => deleteEvent(editingId)}
-                                className="px-4 py-2 bg-rose-600/20 border border-rose-600/30 text-rose-300 hover:bg-rose-600/30 rounded-xl text-sm font-medium transition-colors">
+                                className="px-4 py-2.5 bg-rose-600/20 border border-rose-600/30 text-rose-300 hover:bg-rose-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
                                 Delete
                             </button>
                         )}
                         <button type="submit"
-                            className="px-4 py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium">
+                            className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium min-h-[44px] active:scale-[0.97]">
                             {editingId ? 'Save Changes' : 'Create'}
                         </button>
                     </div>
@@ -185,12 +190,12 @@ export default function ScheduleView() {
                                 <span className="text-xl">{typeEmoji[event.event_type] || '📌'}</span>
                                 <div className="flex-1 min-w-0">
                                     <p className="font-medium text-surface-100 truncate">{event.title}</p>
-                                    <p className="text-xs text-surface-400">
+                                    <p className="text-sm text-surface-400">
                                         {event.date} · {event.start_time?.slice(0, 5)} – {event.end_time?.slice(0, 5)}
                                         <span className="ml-2 capitalize">{event.event_type.replace(/_/g, ' ')}</span>
                                     </p>
                                     {(event.location || event.travel_time_min) && (
-                                        <p className="text-xs text-surface-500 mt-0.5">
+                                        <p className="text-sm text-surface-500 mt-0.5">
                                             {event.location && <><span className="text-forest-400">📍</span> {event.location}</>}
                                             {event.travel_time_min && <span className="ml-2 text-amber-400/70">~{event.travel_time_min}m drive</span>}
                                         </p>
@@ -207,7 +212,7 @@ export default function ScheduleView() {
                                 )}
                                 {event.is_protected && <span className="text-forest-400 text-xs font-medium">Protected</span>}
                                 <button onClick={(e) => { e.stopPropagation(); deleteEvent(event.id); }}
-                                    className="text-surface-500 hover:text-rose-400 transition-colors text-sm">✕</button>
+                                    className="text-surface-500 hover:text-rose-400 transition-colors text-sm w-11 h-11 flex items-center justify-center rounded-xl hover:bg-surface-700/50 active:scale-[0.95]">✕</button>
                             </div>
                         ))
                     )}

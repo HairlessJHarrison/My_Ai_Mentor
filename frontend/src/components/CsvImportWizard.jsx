@@ -71,7 +71,7 @@ export default function CsvImportWizard({ onClose, onImported }) {
 
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold text-surface-100">Import CSV</h2>
-                    <button onClick={onClose} className="text-surface-400 hover:text-surface-200 text-lg">&times;</button>
+                    <button onClick={onClose} className="text-surface-400 hover:text-surface-200 text-lg w-11 h-11 flex items-center justify-center rounded-xl hover:bg-surface-700 active:scale-[0.95]">&times;</button>
                 </div>
 
                 {/* Step indicators */}
@@ -142,7 +142,7 @@ export default function CsvImportWizard({ onClose, onImported }) {
                                     <label className="flex items-center gap-2 text-sm text-surface-300">
                                         <input type="number" value={newMapping.skip_rows}
                                             onChange={e => setNewMapping(m => ({ ...m, skip_rows: e.target.value }))}
-                                            min="0" className="w-16 bg-surface-700 text-surface-100 rounded-lg px-2 py-1 text-sm outline-none" />
+                                            min="0" className="w-20 bg-surface-700 text-surface-100 rounded-lg px-3 py-2 text-sm outline-none min-h-[44px]" />
                                         Skip rows
                                     </label>
                                     <label className="flex items-center gap-2 text-sm text-surface-300">
@@ -153,16 +153,16 @@ export default function CsvImportWizard({ onClose, onImported }) {
                                     </label>
                                 </div>
                                 <button onClick={saveMapping}
-                                    className="w-full py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors">
+                                    className="w-full py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
                                     Save Mapping
                                 </button>
                             </div>
                         )}
 
                         <div className="flex gap-3 justify-end pt-2">
-                            <button onClick={() => setStep(1)} className="px-4 py-2 bg-surface-700 text-surface-300 rounded-xl text-sm">Back</button>
+                            <button onClick={() => setStep(1)} className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[44px] active:scale-[0.97]">Back</button>
                             <button onClick={runPreview} disabled={!selectedMapping || loading}
-                                className="px-4 py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50">
+                                className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50 min-h-[44px] active:scale-[0.97]">
                                 {loading ? 'Loading...' : 'Preview'}
                             </button>
                         </div>
@@ -185,9 +185,9 @@ export default function CsvImportWizard({ onClose, onImported }) {
                                 <tbody>
                                     {(preview.rows || []).slice(0, 5).map((row, i) => (
                                         <tr key={i} className="border-t border-surface-700/50">
-                                            <td className="py-2 pr-4 text-surface-300">{row.date}</td>
-                                            <td className="py-2 pr-4 text-surface-200 truncate max-w-[200px]">{row.description}</td>
-                                            <td className={`py-2 text-right font-medium ${row.amount < 0 ? 'text-rose-400' : 'text-forest-400'}`}>
+                                            <td className="py-3 pr-4 text-surface-300">{row.date}</td>
+                                            <td className="py-3 pr-4 text-surface-200 truncate max-w-[200px]">{row.description}</td>
+                                            <td className={`py-3 text-right font-medium ${row.amount < 0 ? 'text-rose-400' : 'text-forest-400'}`}>
                                                 ${Math.abs(row.amount).toFixed(2)}
                                             </td>
                                         </tr>
@@ -199,9 +199,9 @@ export default function CsvImportWizard({ onClose, onImported }) {
                             <p className="text-xs text-surface-500">...and {preview.rows.length - 5} more</p>
                         )}
                         <div className="flex gap-3 justify-end">
-                            <button onClick={() => setStep(2)} className="px-4 py-2 bg-surface-700 text-surface-300 rounded-xl text-sm">Back</button>
+                            <button onClick={() => setStep(2)} className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[44px] active:scale-[0.97]">Back</button>
                             <button onClick={runImport} disabled={loading}
-                                className="px-4 py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50">
+                                className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50 min-h-[44px] active:scale-[0.97]">
                                 {loading ? 'Importing...' : 'Import All'}
                             </button>
                         </div>
@@ -217,7 +217,7 @@ export default function CsvImportWizard({ onClose, onImported }) {
                         {result.skipped > 0 && <p className="text-xs text-surface-400">{result.skipped} skipped</p>}
                         {result.errors > 0 && <p className="text-xs text-rose-400">{result.errors} errors</p>}
                         <button onClick={onClose}
-                            className="mt-6 px-6 py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors">
+                            className="mt-6 px-6 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
                             Done
                         </button>
                     </div>

@@ -17,6 +17,39 @@ from websocket import manager
 
 router = APIRouter(prefix="/api/v1/chores", tags=["Chores"])
 
+
+def chore_is_scheduled_for_date(chore, check_date: dt.date) -> bool:
+    """Return True if a chore should appear on the given date based on its schedule."""
+    freq = chore.frequency or "daily"
+
+    if freq in ("daily", "as_needed"):
+        return True
+
+    if freq == "weekly":
+        if chore.schedule_day is None:
+            return True  # no day set yet, show every day as fallback
+        return check_date.weekday() == chore.schedule_day
+
+    if freq == "biweekly":
+        if chore.schedule_day is None or chore.schedule_anchor_date is None:
+            return True  # fallback
+        if check_date.weekday() != chore.schedule_day:
+            return False
+        anchor = dt.date.fromisoformat(chore.schedule_anchor_date)
+        delta_days = (check_date - anchor).days
+        week_number = delta_days // 7
+        return week_number % 2 == 0
+
+    if freq == "monthly":
+        if chore.schedule_day is None or chore.schedule_week_of_month is None:
+            return True  # fallback
+        if check_date.weekday() != chore.schedule_day:
+            return False
+        occurrence = (check_date.day - 1) // 7 + 1
+        return occurrence == chore.schedule_week_of_month
+
+    return True  # unknown frequency, show it
+
 HOUSEHOLD_ID = os.getenv("HOUSEHOLD_ID", "default")
 
 
@@ -159,12 +192,13 @@ async def get_chore_status(
         select(Member).where(Member.household_id == HOUSEHOLD_ID)
     ).all()
 
-    chores = session.exec(
+    all_chores = session.exec(
         select(Chore).where(
             Chore.household_id == HOUSEHOLD_ID,
             Chore.is_active == True,
         )
     ).all()
+    chores = [c for c in all_chores if chore_is_scheduled_for_date(c, check_date)]
 
     completions = session.exec(
         select(ChoreCompletion).where(

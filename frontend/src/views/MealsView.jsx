@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { get, post, put, del } from '../hooks/useApi';
 import PresetBrowser from '../components/PresetBrowser';
@@ -20,6 +20,7 @@ export default function MealsView() {
     const [showPresets, setShowPresets] = useState(false);
     const [showGrocery, setShowGrocery] = useState(false);
     const [members, setMembers] = useState([]);
+    const formRef = useRef(null);
     const [form, setForm] = useState(emptyForm());
 
     useEffect(() => {
@@ -28,10 +29,13 @@ export default function MealsView() {
             .catch(console.error).finally(() => setLoading(false));
     }, []);
 
+    const scrollToForm = () => setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+
     const openNewForm = () => {
         setEditingId(null);
         setForm(emptyForm());
         setShowForm(true);
+        scrollToForm();
     };
 
     const openEditForm = (meal) => {
@@ -47,6 +51,7 @@ export default function MealsView() {
             household_id: meal.household_id || 'default',
         });
         setShowForm(true);
+        scrollToForm();
     };
 
     const closeForm = () => {
@@ -113,20 +118,20 @@ export default function MealsView() {
         <div className="min-h-screen p-4 md:p-8 max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200">&larr;</button>
+                    <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200 p-2 -ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl active:scale-[0.97]">&larr;</button>
                     <h1 className="text-2xl font-bold text-surface-100">🍽️ Meal Plans</h1>
                 </div>
                 <div className="flex gap-2">
                     <button onClick={loadGrocery}
-                        className="px-4 py-2 bg-amber-600/20 border border-amber-600/30 text-amber-300 hover:bg-amber-600/30 rounded-xl text-sm font-medium transition-colors">
+                        className="px-4 py-2.5 bg-amber-600/20 border border-amber-600/30 text-amber-300 hover:bg-amber-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
                         🛒 Grocery List
                     </button>
                     <button onClick={() => setShowPresets(true)}
-                        className="px-4 py-2 bg-ocean-600/20 border border-ocean-600/30 text-ocean-300 hover:bg-ocean-600/30 rounded-xl text-sm font-medium transition-colors">
+                        className="px-4 py-2.5 bg-ocean-600/20 border border-ocean-600/30 text-ocean-300 hover:bg-ocean-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
                         Browse Presets
                     </button>
                     <button onClick={openNewForm}
-                        className="px-4 py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors">
+                        className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
                         + Add Meal
                     </button>
                 </div>
@@ -135,21 +140,21 @@ export default function MealsView() {
             {/* Summary bar */}
             <div className="flex gap-4 mb-6 text-sm">
                 <div className="bg-surface-800 rounded-xl px-4 py-3 flex-1 text-center">
-                    <p className="text-surface-400 text-xs">Weekly Cost</p>
+                    <p className="text-surface-400 text-sm">Weekly Cost</p>
                     <p className="text-amber-300 font-semibold">${meals.total_cost?.toFixed(2) || 0}</p>
                 </div>
                 <div className="bg-surface-800 rounded-xl px-4 py-3 flex-1 text-center">
-                    <p className="text-surface-400 text-xs">Avg Health</p>
+                    <p className="text-surface-400 text-sm">Avg Health</p>
                     <p className="text-forest-300 font-semibold">{meals.avg_health_score || 0}/10</p>
                 </div>
                 <div className="bg-surface-800 rounded-xl px-4 py-3 flex-1 text-center">
-                    <p className="text-surface-400 text-xs">Meals Planned</p>
+                    <p className="text-surface-400 text-sm">Meals Planned</p>
                     <p className="text-ocean-300 font-semibold">{meals.meals?.length || 0}</p>
                 </div>
             </div>
 
             {showForm && (
-                <form onSubmit={submitForm} className="bg-surface-800 rounded-2xl p-6 mb-6 space-y-4">
+                <form ref={formRef} onSubmit={submitForm} className="bg-surface-800 rounded-2xl p-6 mb-6 space-y-4">
                     <p className="text-sm font-medium text-surface-300">
                         {editingId ? 'Edit Meal' : 'New Meal'}
                     </p>
@@ -184,15 +189,15 @@ export default function MealsView() {
                         </div>
                     </div>
                     <div className="flex gap-3 justify-end">
-                        <button type="button" onClick={closeForm} className="px-4 py-2 bg-surface-700 text-surface-300 rounded-xl text-sm">Cancel</button>
+                        <button type="button" onClick={closeForm} className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[44px] active:scale-[0.97]">Cancel</button>
                         {editingId && (
                             <button type="button" onClick={() => deleteMeal(editingId)}
-                                className="px-4 py-2 bg-rose-600/20 border border-rose-600/30 text-rose-300 hover:bg-rose-600/30 rounded-xl text-sm font-medium transition-colors">
+                                className="px-4 py-2.5 bg-rose-600/20 border border-rose-600/30 text-rose-300 hover:bg-rose-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
                                 Delete
                             </button>
                         )}
                         <button type="submit"
-                            className="px-4 py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium">
+                            className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium min-h-[44px] active:scale-[0.97]">
                             {editingId ? 'Save Changes' : 'Create'}
                         </button>
                     </div>
@@ -213,14 +218,14 @@ export default function MealsView() {
                             <span className="text-xl">{typeEmoji[meal.meal_type] || '🍽️'}</span>
                             <div className="flex-1 min-w-0">
                                 <p className="font-medium text-surface-100 truncate">{meal.recipe_name}</p>
-                                <p className="text-xs text-surface-400">
+                                <p className="text-sm text-surface-400">
                                     {meal.date} · {meal.meal_type} · {meal.prep_time_min}m prep
                                     <span className="ml-2 text-amber-400">${meal.est_cost?.toFixed(2)}</span>
                                 </p>
                             </div>
                             <span className="text-xs text-forest-400 font-medium">{meal.health_score}/10</span>
                             <button onClick={(e) => { e.stopPropagation(); deleteMeal(meal.id); }}
-                                className="text-surface-500 hover:text-rose-400 transition-colors text-sm">✕</button>
+                                className="text-surface-500 hover:text-rose-400 transition-colors text-sm w-11 h-11 flex items-center justify-center rounded-xl hover:bg-surface-700/50 active:scale-[0.95]">✕</button>
                         </div>
                     ))}
                 </div>

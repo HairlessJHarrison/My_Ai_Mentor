@@ -60,9 +60,9 @@ export default function GoalCard() {
             </div>
 
             {activeGoals.length > 0 && (
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                     {activeGoals.slice(0, 3).map((goal, i) => (
-                        <div key={goal.id || i} className="flex justify-between text-xs px-2 py-1 bg-surface-700/40 rounded-md">
+                        <div key={goal.id || i} className="flex justify-between text-sm px-3 py-2.5 bg-surface-700/40 rounded-lg">
                             <span className="text-surface-300">
                                 {catEmoji[goal.category] || '⭐'} {goal.title}
                             </span>
