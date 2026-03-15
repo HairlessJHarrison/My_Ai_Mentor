@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { get, post, put, del } from '../hooks/useApi';
 import PresetBrowser from '../components/PresetBrowser';
@@ -9,9 +9,25 @@ const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const FULL_DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const EVENT_TYPES = ['appointment', 'work', 'school', 'social', 'errand', 'protected_time', 'other'];
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
-const FREQUENCIES = ['daily', 'weekly', 'as_needed'];
+const FREQUENCIES = ['daily', 'weekly', 'biweekly', 'monthly', 'as_needed'];
+const FREQ_LABELS = { daily: 'Daily', weekly: 'Weekly', biweekly: 'Every other week', monthly: 'Monthly', as_needed: 'As needed' };
+const OCCURRENCE_LABELS = ['1st', '2nd', '3rd', '4th'];
 const TYPE_EMOJI = { appointment: '📋', work: '💼', school: '🎓', social: '🤝', errand: '🏃', protected_time: '🛡️', other: '📌' };
 const MEAL_EMOJI = { breakfast: '🌅', lunch: '☀️', dinner: '🌙', snack: '🍎' };
+
+function formatSchedule(chore) {
+    const freq = chore.frequency || 'daily';
+    const label = FREQ_LABELS[freq] || freq;
+    if (freq === 'daily' || freq === 'as_needed') return label;
+    const dayName = chore.schedule_day != null ? DAY_NAMES[chore.schedule_day] : null;
+    if (freq === 'weekly') return dayName ? `${label} · ${dayName}` : label;
+    if (freq === 'biweekly') return dayName ? `${label} · ${dayName}` : label;
+    if (freq === 'monthly') {
+        const occ = chore.schedule_week_of_month ? OCCURRENCE_LABELS[chore.schedule_week_of_month - 1] : null;
+        return occ && dayName ? `${label} · ${occ} ${dayName}` : label;
+    }
+    return label;
+}
 
 function formatDate(d) {
     return d.toISOString().slice(0, 10);
@@ -54,6 +70,7 @@ function emptyChoreForm() {
     return {
         title: '', points: 5, frequency: 'daily',
         household_id: 'default', assigned_member_ids: [],
+        schedule_day: null, schedule_week_of_month: null, schedule_anchor_date: null,
     };
 }
 
@@ -74,6 +91,11 @@ export default function CalendarView() {
     const [editingId, setEditingId] = useState(null);
     const [form, setForm] = useState(emptyEventForm());
     const [showPresets, setShowPresets] = useState(null);
+    const [showSections, setShowSections] = useState({ schedule: true, meals: true, chores: true });
+    const toggleSection = (key) => setShowSections(prev => ({ ...prev, [key]: !prev[key] }));
+    const formRef = useRef(null);
+
+    const scrollToForm = () => setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
 
     const days = useMemo(() => getWeekDays(weekStart), [weekStart]);
 
@@ -125,7 +147,20 @@ export default function CalendarView() {
                         }
                     }
                 }
-                choresMap[d] = dayChores;
+                // Filter chores: exclude daily/as_needed, and require complete scheduling fields
+                choresMap[d] = dayChores.filter(item => {
+                    const { frequency: freq, schedule_day, schedule_anchor_date, schedule_week_of_month } = item.chore;
+                    if (freq === 'daily' || freq === 'as_needed') return false;
+                    if (freq === 'weekly')
+                        return schedule_day !== null && schedule_day !== undefined;
+                    if (freq === 'biweekly')
+                        return schedule_day !== null && schedule_day !== undefined
+                            && schedule_anchor_date !== null && schedule_anchor_date !== undefined;
+                    if (freq === 'monthly')
+                        return schedule_day !== null && schedule_day !== undefined
+                            && schedule_week_of_month !== null && schedule_week_of_month !== undefined;
+                    return false; // unknown frequency — don't show
+                });
             });
             setChoresByDay(choresMap);
         } catch (err) {
@@ -186,6 +221,7 @@ export default function CalendarView() {
         else if (type === 'meal') setForm(emptyMealForm(date));
         else setForm(emptyChoreForm());
         setShowForm(true);
+        scrollToForm();
     };
 
     const openEditEvent = (event) => {
@@ -200,6 +236,7 @@ export default function CalendarView() {
             assigned_member_ids: event.assigned_member_ids || [],
         });
         setShowForm(true);
+        scrollToForm();
     };
 
     const openEditMeal = (meal) => {
@@ -214,6 +251,7 @@ export default function CalendarView() {
             household_id: meal.household_id || 'default',
         });
         setShowForm(true);
+        scrollToForm();
     };
 
     const openEditChore = (choreItem) => {
@@ -225,8 +263,12 @@ export default function CalendarView() {
             frequency: chore.frequency || 'daily',
             household_id: chore.household_id || 'default',
             assigned_member_ids: chore.assigned_member_ids || [],
+            schedule_day: chore.schedule_day ?? null,
+            schedule_week_of_month: chore.schedule_week_of_month ?? null,
+            schedule_anchor_date: chore.schedule_anchor_date ?? null,
         });
         setShowForm(true);
+        scrollToForm();
     };
 
     const closeForm = () => { setShowForm(false); setEditingId(null); setForm(emptyEventForm()); };
@@ -270,6 +312,9 @@ export default function CalendarView() {
                 const payload = {
                     ...form, points: parseInt(form.points),
                     assigned_member_ids: form.assigned_member_ids?.length > 0 ? form.assigned_member_ids : [],
+                    schedule_day: form.schedule_day,
+                    schedule_week_of_month: form.schedule_week_of_month,
+                    schedule_anchor_date: form.schedule_anchor_date,
                 };
                 if (editingId) await put(`/chores/${editingId}`, payload);
                 else await post('/chores', payload);
@@ -319,6 +364,7 @@ export default function CalendarView() {
                 household_id: 'default', title: preset.title,
                 points: preset.points, frequency: preset.frequency,
                 assigned_member_ids: preset.assigned_member_ids || [],
+                schedule_day: preset.frequency === 'weekly' ? 0 : null,
             });
         }
         if (viewMode === 'week') await loadWeekData();
@@ -335,7 +381,23 @@ export default function CalendarView() {
         eventsForDay(todayDate).sort((a, b) => (a.start_time || '').localeCompare(b.start_time || '')),
     [events, todayDate]);
     const todayMeals = useMemo(() => mealsForDay(todayDate), [mealsByDay, todayDate]);
-    const todayChores = useMemo(() => choresForDay(todayDate), [choresByDay, todayDate]);
+    const todayChores = useMemo(() => {
+        const dayChores = choresForDay(todayDate);
+        // Apply same filtering as week view: exclude daily/as_needed, require complete scheduling fields
+        return dayChores.filter(item => {
+            const { frequency: freq, schedule_day, schedule_anchor_date, schedule_week_of_month } = item.chore;
+            if (freq === 'daily' || freq === 'as_needed') return false;
+            if (freq === 'weekly')
+                return schedule_day !== null && schedule_day !== undefined;
+            if (freq === 'biweekly')
+                return schedule_day !== null && schedule_day !== undefined
+                    && schedule_anchor_date !== null && schedule_anchor_date !== undefined;
+            if (freq === 'monthly')
+                return schedule_day !== null && schedule_day !== undefined
+                    && schedule_week_of_month !== null && schedule_week_of_month !== undefined;
+            return false;
+        });
+    }, [choresByDay, todayDate]);
     const completedChores = todayChores.filter(c => c.completed).length;
 
     // Group meals by type for today view
@@ -350,7 +412,7 @@ export default function CalendarView() {
 
     // --- Render form (shared) ---
     const renderForm = () => (
-        <div className="bg-surface-800 rounded-2xl p-6 mb-6 space-y-4">
+        <div ref={formRef} className="bg-surface-800 rounded-2xl p-6 mb-6 space-y-4">
             {!editingId && (
                 <div className="flex gap-2 mb-2">
                     {[
@@ -427,7 +489,7 @@ export default function CalendarView() {
                     </div>
                 )}
 
-                {formType === 'chore' && (
+                {formType === 'chore' && (<>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                             placeholder="Chore name" required
@@ -435,12 +497,52 @@ export default function CalendarView() {
                         <input type="number" value={form.points} onChange={e => setForm(f => ({ ...f, points: e.target.value }))}
                             placeholder="Points" min="1"
                             className="bg-surface-700 text-surface-100 rounded-xl px-4 py-3 text-sm outline-none" />
-                        <select value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))}
+                        <select value={form.frequency} onChange={e => {
+                                const newFreq = e.target.value;
+                                setForm(f => ({
+                                    ...f, frequency: newFreq,
+                                    schedule_day: (newFreq === 'daily' || newFreq === 'as_needed') ? null : f.schedule_day,
+                                    schedule_week_of_month: newFreq === 'monthly' ? (f.schedule_week_of_month || 1) : null,
+                                    schedule_anchor_date: newFreq === 'biweekly' ? new Date().toISOString().slice(0, 10) : null,
+                                }));
+                            }}
                             className="bg-surface-700 text-surface-100 rounded-xl px-4 py-3 text-sm outline-none">
-                            {FREQUENCIES.map(f => <option key={f} value={f}>{f.replace(/_/g, ' ')}</option>)}
+                            {FREQUENCIES.map(f => <option key={f} value={f}>{FREQ_LABELS[f]}</option>)}
                         </select>
                     </div>
-                )}
+                    {['weekly', 'biweekly', 'monthly'].includes(form.frequency) && (
+                        <div>
+                            <p className="text-sm text-surface-400 mb-2">Day of week:</p>
+                            <div className="flex gap-2 flex-wrap">
+                                {DAY_NAMES.map((day, i) => (
+                                    <button key={i} type="button" onClick={() => setForm(f => ({ ...f, schedule_day: i }))}
+                                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97] ${form.schedule_day === i
+                                            ? 'bg-forest-600 text-white'
+                                            : 'bg-surface-700 text-surface-300 hover:bg-surface-600'
+                                        }`}>
+                                        {day}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    {form.frequency === 'monthly' && (
+                        <div>
+                            <p className="text-sm text-surface-400 mb-2">Which occurrence in the month:</p>
+                            <div className="flex gap-2">
+                                {OCCURRENCE_LABELS.map((label, i) => (
+                                    <button key={i} type="button" onClick={() => setForm(f => ({ ...f, schedule_week_of_month: i + 1 }))}
+                                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97] ${form.schedule_week_of_month === i + 1
+                                            ? 'bg-forest-600 text-white'
+                                            : 'bg-surface-700 text-surface-300 hover:bg-surface-600'
+                                        }`}>
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </>)}
 
                 {(formType === 'event' || formType === 'chore') && members.length > 0 && (
                     <div>
@@ -450,7 +552,7 @@ export default function CalendarView() {
                         <div className="flex flex-wrap gap-2">
                             {members.map(m => (
                                 <button key={m.id} type="button" onClick={() => toggleMemberAssignment(m.id)}
-                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm transition-colors min-h-[44px] active:scale-[0.97] ${
                                         (form.assigned_member_ids || []).includes(m.id)
                                             ? 'bg-forest-600 text-white'
                                             : 'bg-surface-700 text-surface-300 hover:bg-surface-600'
@@ -465,15 +567,15 @@ export default function CalendarView() {
 
                 <div className="flex gap-3 justify-end">
                     <button type="button" onClick={closeForm}
-                        className="px-4 py-2 bg-surface-700 text-surface-300 rounded-xl text-sm">Cancel</button>
+                        className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[44px] active:scale-[0.97]">Cancel</button>
                     {editingId && (
                         <button type="button" onClick={deleteItem}
-                            className="px-4 py-2 bg-rose-600/20 border border-rose-600/30 text-rose-300 hover:bg-rose-600/30 rounded-xl text-sm font-medium transition-colors">
+                            className="px-4 py-2.5 bg-rose-600/20 border border-rose-600/30 text-rose-300 hover:bg-rose-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
                             Delete
                         </button>
                     )}
                     <button type="submit"
-                        className="px-4 py-2 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium">
+                        className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium min-h-[44px] active:scale-[0.97]">
                         {editingId ? 'Save Changes' : 'Create'}
                     </button>
                 </div>
@@ -487,22 +589,29 @@ export default function CalendarView() {
             {/* Schedule / Timeline */}
             <section>
                 <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
-                        📅 Schedule
-                        <span className="text-sm font-normal text-surface-400">({todayEvents.length})</span>
-                    </h2>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => toggleSection('schedule')} className="text-surface-400 hover:text-surface-200 transition-colors">
+                            {showSections.schedule ? '▾' : '▸'}
+                        </button>
+                        <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
+                            📅 Schedule
+                            <span className="text-sm font-normal text-surface-400">({todayEvents.length})</span>
+                        </h2>
+                    </div>
                     <button onClick={() => openNewForm(todayDate, 'event')}
-                        className="px-3 py-1.5 bg-ocean-600/20 border border-ocean-600/30 text-ocean-300 hover:bg-ocean-600/30 rounded-lg text-xs font-medium transition-colors">
+                        className="px-4 py-2.5 bg-ocean-600/20 border border-ocean-600/30 text-ocean-300 hover:bg-ocean-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
                         + Event
                     </button>
                 </div>
-                {todayEvents.length === 0 ? (
-                    <div className="bg-surface-800 rounded-xl px-5 py-6 text-center text-surface-500 text-sm">
-                        No events scheduled
-                    </div>
-                ) : (
-                    <div className="space-y-2">
-                        {todayEvents.map(event => (
+                {showSections.schedule && (
+                    <>
+                        {todayEvents.length === 0 ? (
+                            <div className="bg-surface-800 rounded-xl px-5 py-6 text-center text-surface-500 text-sm">
+                                No events scheduled
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                {todayEvents.map(event => (
                             <div key={event.id}
                                 onClick={() => openEditEvent(event)}
                                 className={`flex items-center gap-4 px-5 py-4 rounded-xl transition-colors cursor-pointer
@@ -513,12 +622,12 @@ export default function CalendarView() {
                                 <span className="text-xl">{TYPE_EMOJI[event.event_type] || '📌'}</span>
                                 <div className="flex-1 min-w-0">
                                     <p className="font-medium text-surface-100 truncate">{event.title}</p>
-                                    <p className="text-xs text-surface-400">
+                                    <p className="text-sm text-surface-400">
                                         {event.start_time?.slice(0, 5)} – {event.end_time?.slice(0, 5)}
                                         <span className="ml-2 capitalize">{event.event_type.replace(/_/g, ' ')}</span>
                                     </p>
                                     {event.location && (
-                                        <p className="text-xs text-surface-500 mt-0.5">
+                                        <p className="text-sm text-surface-500 mt-0.5">
                                             <span className="text-forest-400">📍</span> {event.location}
                                             {event.travel_time_min && <span className="ml-2 text-amber-400/70">~{event.travel_time_min}m drive</span>}
                                         </p>
@@ -535,29 +644,38 @@ export default function CalendarView() {
                                 {event.is_protected && <span className="text-forest-400 text-xs font-medium">Protected</span>}
                             </div>
                         ))}
-                    </div>
+                            </div>
+                        )}
+                    </>
                 )}
             </section>
 
             {/* Meals */}
             <section>
                 <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
-                        🍽️ Meals
-                        <span className="text-sm font-normal text-surface-400">({todayMeals.length})</span>
-                    </h2>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => toggleSection('meals')} className="text-surface-400 hover:text-surface-200 transition-colors">
+                            {showSections.meals ? '▾' : '▸'}
+                        </button>
+                        <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
+                            🍽️ Meals
+                            <span className="text-sm font-normal text-surface-400">({todayMeals.length})</span>
+                        </h2>
+                    </div>
                     <button onClick={() => openNewForm(todayDate, 'meal')}
-                        className="px-3 py-1.5 bg-amber-600/20 border border-amber-600/30 text-amber-300 hover:bg-amber-600/30 rounded-lg text-xs font-medium transition-colors">
+                        className="px-4 py-2.5 bg-amber-600/20 border border-amber-600/30 text-amber-300 hover:bg-amber-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
                         + Meal
                     </button>
                 </div>
-                {todayMeals.length === 0 ? (
-                    <div className="bg-surface-800 rounded-xl px-5 py-6 text-center text-surface-500 text-sm">
-                        No meals planned
-                    </div>
-                ) : (
-                    <div className="space-y-3">
-                        {Object.entries(mealsByType).map(([type, items]) => (
+                {showSections.meals && (
+                    <>
+                        {todayMeals.length === 0 ? (
+                            <div className="bg-surface-800 rounded-xl px-5 py-6 text-center text-surface-500 text-sm">
+                                No meals planned
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {Object.entries(mealsByType).map(([type, items]) => (
                             <div key={type}>
                                 <p className="text-xs font-medium text-surface-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                                     {MEAL_EMOJI[type]} {type}
@@ -570,7 +688,7 @@ export default function CalendarView() {
                                                 ${editingId === meal.id && formType === 'meal' ? 'ring-2 ring-amber-400' : ''}`}>
                                             <div className="flex-1 min-w-0">
                                                 <p className="font-medium text-surface-100 truncate">{meal.recipe_name}</p>
-                                                <p className="text-xs text-surface-400">
+                                                <p className="text-sm text-surface-400">
                                                     {meal.prep_time_min}m prep
                                                     <span className="ml-2 text-amber-400">${meal.est_cost?.toFixed(2)}</span>
                                                     <span className="ml-2 text-surface-500">{(meal.ingredients || []).length} ingredients</span>
@@ -582,25 +700,34 @@ export default function CalendarView() {
                                 </div>
                             </div>
                         ))}
-                    </div>
+                            </div>
+                        )}
+                    </>
                 )}
             </section>
 
             {/* Chores */}
             <section>
                 <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
-                        🧹 Chores
-                        <span className="text-sm font-normal text-surface-400">
-                            ({completedChores}/{todayChores.length})
-                        </span>
-                    </h2>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => toggleSection('chores')} className="text-surface-400 hover:text-surface-200 transition-colors">
+                            {showSections.chores ? '▾' : '▸'}
+                        </button>
+                        <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
+                            🧹 Chores
+                            <span className="text-sm font-normal text-surface-400">
+                                ({completedChores}/{todayChores.length})
+                            </span>
+                        </h2>
+                    </div>
                     <button onClick={() => openNewForm(todayDate, 'chore')}
-                        className="px-3 py-1.5 bg-forest-600/20 border border-forest-600/30 text-forest-300 hover:bg-forest-600/30 rounded-lg text-xs font-medium transition-colors">
+                        className="px-4 py-2.5 bg-forest-600/20 border border-forest-600/30 text-forest-300 hover:bg-forest-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
                         + Chore
                     </button>
                 </div>
-                {todayChores.length > 0 && (
+                {showSections.chores && (
+                    <>
+                        {todayChores.length > 0 && (
                     <div className="bg-surface-800 rounded-xl p-4 mb-3">
                         <div className="flex items-center gap-3">
                             <div className="flex-1 h-2 bg-surface-700 rounded-full overflow-hidden">
@@ -624,34 +751,42 @@ export default function CalendarView() {
                                 className={`flex items-center gap-3 px-5 py-3 rounded-xl transition-colors
                                     ${item.completed ? 'bg-surface-800/60' : 'bg-surface-800'}`}>
                                 <button onClick={() => !item.completed && completeChore(item.chore.id)}
-                                    className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
+                                    className={`w-11 h-11 rounded-xl border-2 flex items-center justify-center transition-colors flex-shrink-0 active:scale-[0.95] ${
                                         item.completed
                                             ? 'bg-forest-600 border-forest-600 text-white'
                                             : 'border-surface-500 hover:border-forest-400'
                                     }`}>
-                                    {item.completed && <span className="text-xs">✓</span>}
+                                    {item.completed && <span className="text-sm">✓</span>}
                                 </button>
                                 <div className="flex-1 min-w-0 cursor-pointer" onClick={() => openEditChore(item)}>
                                     <p className={`font-medium ${item.completed ? 'text-surface-500 line-through' : 'text-surface-100'}`}>
                                         {item.chore.title}
                                     </p>
-                                    <p className="text-xs text-surface-400">
+                                    <p className="text-sm text-surface-400">
                                         <span className="text-amber-400">+{item.chore.points} pts</span>
                                         <span className="mx-1">·</span>
-                                        <span>{item.chore.frequency?.replace(/_/g, ' ')}</span>
+                                        <span>{formatSchedule(item.chore)}</span>
                                     </p>
                                 </div>
                                 {item.chore.assigned_member_ids?.length > 0 && (
                                     <div className="flex gap-1 shrink-0">
                                         {item.chore.assigned_member_ids.map(id => {
                                             const m = members.find(mem => mem.id === id);
-                                            return m ? <span key={id} className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: m.color }} title={m.name} /> : null;
+                                            return m ? (
+                                                <span key={id}
+                                                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                                                    style={{ backgroundColor: m.color }} title={m.name}>
+                                                    {m.name.slice(0, 2).toUpperCase()}
+                                                </span>
+                                            ) : null;
                                         })}
                                     </div>
                                 )}
                             </div>
                         ))}
-                    </div>
+                        </div>
+                    )}
+                    </>
                 )}
             </section>
         </div>
@@ -683,15 +818,15 @@ export default function CalendarView() {
                                     </p>
                                 </div>
                                 <button onClick={() => openNewForm(date)}
-                                    className="w-7 h-7 flex items-center justify-center bg-surface-700 hover:bg-surface-600 text-surface-400 hover:text-surface-200 rounded-lg text-sm transition-colors">
+                                    className="w-10 h-10 flex items-center justify-center bg-surface-700 hover:bg-surface-600 text-surface-400 hover:text-surface-200 rounded-lg text-base transition-colors active:scale-[0.95]">
                                     +
                                 </button>
                             </div>
 
                             <div className="space-y-1 flex-1 overflow-y-auto">
-                                {dayEvents.map(event => (
+                                {showSections.schedule && dayEvents.map(event => (
                                     <button key={`e-${event.id}`} onClick={() => openEditEvent(event)}
-                                        className={`w-full text-left px-2 py-1.5 rounded-lg text-xs transition-colors cursor-pointer
+                                        className={`w-full text-left px-2.5 py-2 rounded-lg text-xs transition-colors cursor-pointer min-h-[36px]
                                             ${editingId === event.id && formType === 'event' ? 'ring-1 ring-ocean-400' : ''}
                                             bg-ocean-600/15 hover:bg-ocean-600/25 text-surface-200`}>
                                         <span className="mr-1">{TYPE_EMOJI[event.event_type] || '📌'}</span>
@@ -699,25 +834,39 @@ export default function CalendarView() {
                                         <span className="ml-1 truncate">{event.title}</span>
                                     </button>
                                 ))}
-                                {dayMeals.map(meal => (
+                                {showSections.meals && dayMeals.map(meal => (
                                     <button key={`m-${meal.id}`} onClick={() => openEditMeal(meal)}
-                                        className={`w-full text-left px-2 py-1.5 rounded-lg text-xs transition-colors cursor-pointer
+                                        className={`w-full text-left px-2.5 py-2 rounded-lg text-xs transition-colors cursor-pointer min-h-[36px]
                                             ${editingId === meal.id && formType === 'meal' ? 'ring-1 ring-amber-400' : ''}
                                             bg-amber-600/15 hover:bg-amber-600/25 text-surface-200`}>
                                         <span className="mr-1">{MEAL_EMOJI[meal.meal_type] || '🍽️'}</span>
                                         <span className="truncate">{meal.recipe_name}</span>
                                     </button>
                                 ))}
-                                {dayChores.map(item => (
+                                {showSections.chores && dayChores.map(item => (
                                     <button key={`c-${item.chore.id}`} onClick={() => openEditChore(item)}
-                                        className={`w-full text-left px-2 py-1.5 rounded-lg text-xs transition-colors cursor-pointer
+                                        className={`w-full text-left px-2.5 py-2 rounded-lg text-xs transition-colors cursor-pointer min-h-[36px] flex items-center gap-2
                                             ${editingId === item.chore.id && formType === 'chore' ? 'ring-1 ring-forest-400' : ''}
                                             ${item.completed
                                                 ? 'bg-forest-600/10 text-surface-500 line-through'
                                                 : 'bg-forest-600/15 hover:bg-forest-600/25 text-surface-200'
                                             }`}>
-                                        <span className="mr-1">{item.completed ? '✅' : '🧹'}</span>
-                                        <span className="truncate">{item.chore.title}</span>
+                                        <span className="mr-0">{item.completed ? '✅' : '🧹'}</span>
+                                        <span className="truncate flex-1">{item.chore.title}</span>
+                                        {item.chore.assigned_member_ids?.length > 0 && (
+                                            <span className="flex gap-0.5 shrink-0">
+                                                {item.chore.assigned_member_ids.map(id => {
+                                                    const m = members.find(mem => mem.id === id);
+                                                    return m ? (
+                                                        <span key={id}
+                                                            className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
+                                                            style={{ backgroundColor: m.color }} title={m.name}>
+                                                            {m.name.slice(0, 2).toUpperCase()}
+                                                        </span>
+                                                    ) : null;
+                                                })}
+                                            </span>
+                                        )}
                                     </button>
                                 ))}
                                 {dayEvents.length === 0 && dayMeals.length === 0 && dayChores.length === 0 && (
@@ -728,10 +877,19 @@ export default function CalendarView() {
                     );
                 })}
             </div>
-            <div className="flex items-center justify-center gap-6 mt-4 text-xs text-surface-400">
-                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-ocean-600/30" /> Events</span>
-                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-600/30" /> Meals</span>
-                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-forest-600/30" /> Chores</span>
+            <div className="flex items-center justify-center gap-4 mt-4">
+                {[
+                    { key: 'schedule', label: 'Events', color: 'bg-ocean-600/30 border-ocean-600/50' },
+                    { key: 'meals',    label: 'Meals',  color: 'bg-amber-600/30 border-amber-600/50' },
+                    { key: 'chores',   label: 'Chores', color: 'bg-forest-600/30 border-forest-600/50' },
+                ].map(({ key, label, color }) => (
+                    <button key={key} onClick={() => toggleSection(key)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border transition-all
+                            ${showSections[key] ? color + ' text-surface-200' : 'bg-surface-800 border-surface-700 text-surface-500 line-through'}`}>
+                        <span className={`w-2.5 h-2.5 rounded ${color.split(' ')[0]}`} />
+                        {label}
+                    </button>
+                ))}
             </div>
         </>
     );
@@ -741,31 +899,31 @@ export default function CalendarView() {
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200 transition-colors">&larr;</button>
+                    <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200 transition-colors p-2 -ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl active:scale-[0.97]">&larr;</button>
                     <h1 className="text-2xl font-bold text-surface-100">📆 Calendar</h1>
                 </div>
                 <div className="flex items-center gap-2">
                     {/* View mode toggle */}
                     <div className="flex bg-surface-800 rounded-xl p-1 gap-1">
                         <button onClick={() => setViewMode('today')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                            className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
                                 viewMode === 'today' ? 'bg-forest-600 text-white' : 'text-surface-400 hover:text-surface-200'
                             }`}>
                             Today
                         </button>
                         <button onClick={() => setViewMode('week')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                            className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
                                 viewMode === 'week' ? 'bg-forest-600 text-white' : 'text-surface-400 hover:text-surface-200'
                             }`}>
                             Week
                         </button>
                     </div>
                     <button onClick={() => setShowPresets('meal')}
-                        className="px-3 py-2 bg-amber-600/20 border border-amber-600/30 text-amber-300 hover:bg-amber-600/30 rounded-xl text-xs font-medium transition-colors">
+                        className="px-4 py-2.5 bg-amber-600/20 border border-amber-600/30 text-amber-300 hover:bg-amber-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
                         🍽️ Meal Presets
                     </button>
                     <button onClick={() => setShowPresets('chore')}
-                        className="px-3 py-2 bg-forest-600/20 border border-forest-600/30 text-forest-300 hover:bg-forest-600/30 rounded-xl text-xs font-medium transition-colors">
+                        className="px-4 py-2.5 bg-forest-600/20 border border-forest-600/30 text-forest-300 hover:bg-forest-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
                         🧹 Chore Presets
                     </button>
                 </div>
@@ -774,24 +932,24 @@ export default function CalendarView() {
             {/* Navigation */}
             {viewMode === 'today' ? (
                 <div className="flex items-center justify-center gap-4 mb-6">
-                    <button onClick={prevDay} className="px-3 py-2 bg-surface-800 hover:bg-surface-700 text-surface-300 rounded-xl text-sm transition-colors">&larr;</button>
+                    <button onClick={prevDay} className="px-3 py-2.5 bg-surface-800 hover:bg-surface-700 text-surface-300 rounded-xl text-sm transition-colors min-h-[44px] active:scale-[0.97]">&larr;</button>
                     <button onClick={goToday}
-                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97] ${
                             isTodayActual
                                 ? 'bg-forest-600/20 border border-forest-600/30 text-forest-300'
                                 : 'bg-surface-800 hover:bg-surface-700 text-surface-200'
                         }`}>
                         {todayLabel}
                     </button>
-                    <button onClick={nextDay} className="px-3 py-2 bg-surface-800 hover:bg-surface-700 text-surface-300 rounded-xl text-sm transition-colors">&rarr;</button>
+                    <button onClick={nextDay} className="px-3 py-2.5 bg-surface-800 hover:bg-surface-700 text-surface-300 rounded-xl text-sm transition-colors min-h-[44px] active:scale-[0.97]">&rarr;</button>
                 </div>
             ) : (
                 <div className="flex items-center justify-center gap-4 mb-6">
-                    <button onClick={prevWeek} className="px-3 py-2 bg-surface-800 hover:bg-surface-700 text-surface-300 rounded-xl text-sm transition-colors">&larr;</button>
-                    <button onClick={goToday} className="px-4 py-2 bg-surface-800 hover:bg-surface-700 text-surface-200 rounded-xl text-sm font-medium transition-colors">
+                    <button onClick={prevWeek} className="px-3 py-2.5 bg-surface-800 hover:bg-surface-700 text-surface-300 rounded-xl text-sm transition-colors min-h-[44px] active:scale-[0.97]">&larr;</button>
+                    <button onClick={goToday} className="px-4 py-2.5 bg-surface-800 hover:bg-surface-700 text-surface-200 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
                         {weekLabel}
                     </button>
-                    <button onClick={nextWeek} className="px-3 py-2 bg-surface-800 hover:bg-surface-700 text-surface-300 rounded-xl text-sm transition-colors">&rarr;</button>
+                    <button onClick={nextWeek} className="px-3 py-2.5 bg-surface-800 hover:bg-surface-700 text-surface-300 rounded-xl text-sm transition-colors min-h-[44px] active:scale-[0.97]">&rarr;</button>
                 </div>
             )}
 
