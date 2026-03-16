@@ -25,6 +25,7 @@ from api.members import router as members_router
 from api.goals import router as goals_router
 from api.chores import router as chores_router
 from api.google_calendar import router as google_calendar_router
+from api.ai_context import router as ai_context_router
 
 START_TIME = time.time()
 
@@ -36,11 +37,42 @@ async def lifespan(app: FastAPI):
     yield
 
 
+tags_metadata = [
+    {"name": "AI Context", "description": "Consolidated endpoints designed for AI agents to get full household state in a single call."},
+    {"name": "Schedules", "description": "Manage calendar events, free time blocks, and travel time calculations."},
+    {"name": "Meals", "description": "Meal planning, recipe management, and grocery list generation."},
+    {"name": "Budgets", "description": "Budget tracking, transaction logging, CSV import, and spending forecasts."},
+    {"name": "Scoring", "description": "Presence scoring system — log family activities and track points."},
+    {"name": "Presence", "description": "Screen-free unplugged sessions with countdown timer and auto-scoring."},
+    {"name": "Configuration", "description": "Household config, member preferences, and JSON Schema export."},
+    {"name": "Members", "description": "Family member profiles, roles, and per-member score breakdowns."},
+    {"name": "Goals", "description": "Personal goals with streak tracking and point rewards."},
+    {"name": "Chores", "description": "Household chore management with completion tracking and parent verification."},
+    {"name": "Google Calendar", "description": "OAuth2-based two-way Google Calendar sync."},
+]
+
 app = FastAPI(
     title="Unplugged",
-    description="Household data platform for screen-free family time",
+    description=(
+        "Household data platform for screen-free family time. "
+        "This API serves two consumers: a React dashboard for humans "
+        "and autonomous AI agents (like OpenClaw) that manage schedules, "
+        "meals, budgets, and presence scoring.\n\n"
+        "**AI Agents:** Start with `GET /api/v1/ai/context` for a full "
+        "household snapshot. See `/llms.txt` for detailed instructions."
+    ),
     version="1.0.0",
     lifespan=lifespan,
+    openapi_tags=tags_metadata,
+    contact={
+        "name": "Unplugged",
+        "url": "https://github.com/HairlessJHarrison/My_Ai_Mentor",
+    },
+    license_info={
+        "name": "MIT",
+    },
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
 app.add_middleware(
@@ -62,6 +94,7 @@ app.include_router(members_router)
 app.include_router(goals_router)
 app.include_router(chores_router)
 app.include_router(google_calendar_router)
+app.include_router(ai_context_router)
 
 
 @app.get("/api/v1/health")

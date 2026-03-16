@@ -119,6 +119,14 @@ export default function ScoreCard() {
                     ))}
                 </div>
             )}
+
+            {/* Reflection link */}
+            <button
+                onClick={(e) => { e.stopPropagation(); navigate('/reflection'); }}
+                className="w-full mt-3 text-xs text-surface-400 hover:text-forest-400 transition-colors text-center py-2 rounded-lg hover:bg-surface-700/30 active:scale-[0.97]"
+            >
+                📝 View Weekly Reflection →
+            </button>
         </div>
     );
 }

@@ -14,7 +14,12 @@ def create_db_and_tables():
 def migrate_chore_schedule_columns():
     """Add schedule columns to chores table if they don't exist."""
     import sqlite3
+    # Skip for in-memory databases (test environment uses sqlite://)
+    if DATABASE_URL in ("sqlite://", "sqlite:///"):
+        return  # In-memory DB — schema is created fresh by create_db_and_tables()
     db_path = DATABASE_URL.replace("sqlite:///", "")
+    if not db_path or db_path == DATABASE_URL:
+        return  # Could not extract a valid file path
     conn = sqlite3.connect(db_path)
     for col, col_type in [
         ("schedule_day", "INTEGER"),
@@ -25,6 +30,13 @@ def migrate_chore_schedule_columns():
             conn.execute(f"ALTER TABLE chores ADD COLUMN {col} {col_type}")
         except sqlite3.OperationalError:
             pass  # column already exists
+
+    # Add participant_member_ids to activities table
+    try:
+        conn.execute("ALTER TABLE activities ADD COLUMN participant_member_ids TEXT DEFAULT '[]'")
+    except sqlite3.OperationalError:
+        pass  # column already exists
+
     conn.commit()
     conn.close()
 

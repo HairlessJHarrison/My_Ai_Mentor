@@ -1,0 +1,320 @@
+# Unplugged — Complete API Documentation for AI Agents
+
+> This is the full API reference for the Unplugged household management system.
+> For a quick overview, see `/llms.txt`. For the machine-readable schema, see `/openapi.json`.
+
+## Authentication
+
+All endpoints require `Authorization: Bearer <UNPLUGGED_API_KEY>` unless the server is running in dev mode (no API_KEY set).
+
+---
+
+## AI Context (Consolidated Snapshot)
+
+### `GET /api/v1/ai/context`
+Returns a single JSON object with the complete current household state. **This is the recommended first call for any AI agent.**
+
+Response:
+```json
+{
+  "household": { "household_id": "...", "household_name": "...", "members": [...], "health_goals": [...], "dietary_restrictions": [...], "preferences": {...} },
+  "members": [{ "id": 1, "name": "...", "role": "parent|child", "color": "#hex", "age": null }],
+  "today_schedule": { "events": [...], "free_blocks": [{ "start": "HH:MM", "end": "HH:MM", "duration_min": 60 }] },
+  "today_meals": [{ "meal_type": "dinner", "recipe_name": "...", "prep_time_min": 30, "health_score": 8, "est_cost": 12.50 }],
+  "budget_summary": { "categories": [{ "category": "groceries", "limit": 400, "spent": 285, "remaining": 115 }], "total_limit": 2000, "total_spent": 1450 },
+  "today_score": { "activities": [...], "total_points": 45 },
+  "active_presence_session": null,
+  "pending_chores": { "members": [{ "member_id": 1, "chores": [{ "chore": {...}, "completed": false }] }] }
+}
+```
+
+---
+
+## Schedules
+
+### `GET /api/v1/schedules/today`
+Returns today's events and free time blocks.
+
+Response: `{ "events": ScheduleEvent[], "free_blocks": [{ "start": "HH:MM", "end": "HH:MM", "duration_min": int }] }`
+
+### `GET /api/v1/schedules/week?start_date=YYYY-MM-DD`
+Returns events for a given week (defaults to current week).
+
+### `GET /api/v1/schedules/free-blocks?days=7`
+Returns overlapping free time windows across all household members for the next N days.
+
+Response: `[{ "date": "YYYY-MM-DD", "start": "HH:MM", "end": "HH:MM", "duration_min": int, "overlapping_members": [] }]`
+
+### `POST /api/v1/schedules/events`
+Create a new schedule event.
+
+Body:
+```json
+{
+  "date": "YYYY-MM-DD",
+  "start_time": "HH:MM:SS",
+  "end_time": "HH:MM:SS",
+  "title": "Event title",
+  "event_type": "appointment|work|school|social|errand|protected_time|other",
+  "is_protected": false,
+  "participants": ["Mom", "Dad"],
+  "location": "123 Main St",
+  "travel_time_min": 15
+}
+```
+
+### `PUT /api/v1/schedules/events/{id}`
+Update an existing event (partial update supported).
+
+### `PUT /api/v1/schedules/events/{id}/protect`
+Mark/unmark a time block as protected screen-free family time.
+
+Body: `{ "is_protected": true }`
+
+### `DELETE /api/v1/schedules/events/{id}`
+Delete an event. Response: `{ "deleted": true }`
+
+### `GET /api/v1/schedules/member/{member_id}`
+Get events assigned to a specific member.
+
+### `GET /api/v1/schedules/travel-time?from=ADDRESS&to=ADDRESS`
+Calculate travel time between two locations (requires Google Maps API key).
+
+### `POST /api/v1/schedules/events/{id}/auto-travel`
+Auto-calculate and set travel time for an event from a given origin address.
+
+---
+
+## Meals
+
+### `GET /api/v1/meals/plan?week=current`
+Get the current week's meal plan with cost and health summaries.
+
+Response: `{ "meals": MealPlan[], "total_cost": float, "avg_health_score": float }`
+
+### `GET /api/v1/meals/plan?date=YYYY-MM-DD`
+Get meals for a specific date.
+
+### `POST /api/v1/meals/plan`
+Create a meal plan entry.
+
+Body:
+```json
+{
+  "date": "YYYY-MM-DD",
+  "meal_type": "breakfast|lunch|dinner|snack",
+  "recipe_name": "Chicken Stir Fry",
+  "ingredients": ["chicken breast", "soy sauce", "broccoli"],
+  "est_cost": 12.50,
+  "health_score": 8,
+  "prep_time_min": 30,
+  "nutrition_data": { "calories": 450, "protein_g": 35, "carbs_g": 40, "fat_g": 12 },
+  "notes": "Use the cast iron pan"
+}
+```
+
+### `PUT /api/v1/meals/plan/{id}`
+Update a meal plan entry (partial update).
+
+### `DELETE /api/v1/meals/plan/{id}`
+Delete a meal plan entry.
+
+### `GET /api/v1/meals/grocery-list?week=current`
+Consolidated grocery list from all meal plans for the week.
+
+Response: `{ "items": [{ "ingredient": "chicken breast", "quantity_needed": 2, "est_cost": 8.00 }], "total_est_cost": float }`
+
+---
+
+## Budgets
+
+### `GET /api/v1/budgets/summary?month=current`
+Budget vs. actual spending by category for a month.
+
+Response: `{ "categories": [{ "category": "groceries", "limit": 400, "spent": 285, "remaining": 115, "pct_used": 71.25 }], "total_limit": float, "total_spent": float }`
+
+### `POST /api/v1/budgets`
+Create or update a budget line for a category/month.
+
+Body: `{ "month": "YYYY-MM", "category": "groceries", "limit_amount": 400.00 }`
+
+### `GET /api/v1/budgets/transactions?month=current&category=groceries`
+Filtered transaction list.
+
+### `POST /api/v1/budgets/transactions`
+Log a single transaction.
+
+Body:
+```json
+{
+  "date": "YYYY-MM-DD",
+  "amount": -45.67,
+  "description": "Whole Foods grocery run",
+  "category": "groceries|dining|transport|utilities|entertainment|health|housing|other",
+  "tags": ["weekly-shop"]
+}
+```
+Note: Use negative amounts for expenses, positive for income.
+
+### `POST /api/v1/budgets/import-csv`
+Bulk import transactions from a bank CSV. Uses `multipart/form-data`.
+
+### `POST /api/v1/budgets/import-csv/preview`
+Preview first 5 rows with mapping applied before committing.
+
+### `GET /api/v1/budgets/forecast?months=3`
+Simple spending forecast based on historical trends.
+
+### `GET /api/v1/budgets/csv-mappings`
+List saved CSV column mapping profiles.
+
+### `POST /api/v1/budgets/csv-mappings`
+Save a CSV column mapping profile (e.g., "Chase Checking", "Amex Credit").
+
+---
+
+## Scoring
+
+### `POST /api/v1/scoring/log-activity`
+Log a scored family activity. Points are calculated server-side.
+
+Body:
+```json
+{
+  "activity_type": "screen_free_family|outdoor|shared_meal|game_creative|one_on_one|other",
+  "duration_min": 60,
+  "participants_count": 4,
+  "details": { "description": "Board game night" }
+}
+```
+
+### `GET /api/v1/scoring/today`
+Today's activities and total points.
+
+### `GET /api/v1/scoring/trends?weeks=4`
+Weekly presence score trends.
+
+### `GET /api/v1/scoring/streaks`
+Current active streaks by activity type.
+
+---
+
+## Presence (Unplugged Sessions)
+
+### `POST /api/v1/presence/start`
+Start a screen-free session. Pushes full-screen countdown to all connected dashboard clients.
+
+Body: `{ "planned_duration_min": 30, "suggested_activity": "Go for a family walk" }`
+
+### `POST /api/v1/presence/end`
+End the active session. Auto-logs a scored activity based on duration.
+
+### `GET /api/v1/presence/current`
+Get active session (or null if none active).
+
+### `GET /api/v1/presence/stats?weeks=4`
+Session statistics: total hours, average duration, completion rate.
+
+---
+
+## Members
+
+### `GET /api/v1/members`
+List all household members.
+
+### `POST /api/v1/members`
+Create a new member. Body: `{ "name": "Alice", "role": "child", "age": 10, "color": "#f59e0b" }`
+
+### `PUT /api/v1/members/{id}`
+Update a member's profile.
+
+### `DELETE /api/v1/members/{id}`
+Remove a member.
+
+### `GET /api/v1/members/{id}/score?period=week`
+Get a member's total score with breakdown by activities, goals, and chores.
+
+---
+
+## Personal Goals
+
+### `GET /api/v1/goals?member_id=X`
+List goals for a member.
+
+### `POST /api/v1/goals`
+Create a personal goal.
+
+Body: `{ "member_id": 1, "title": "Practice piano 20 min", "category": "learning|fitness|creativity|mindfulness|health|other", "target_frequency": "daily", "points_per_completion": 15 }`
+
+### `PUT /api/v1/goals/{id}`
+Update a goal.
+
+### `DELETE /api/v1/goals/{id}`
+Deactivate a goal (soft delete).
+
+### `POST /api/v1/goals/complete`
+Log a goal completion. Body: `{ "goal_id": 1, "member_id": 1, "duration_min": 20, "notes": "Played Fur Elise" }`
+
+### `GET /api/v1/goals/progress?member_id=X&days=7`
+Goal completion history with streak tracking.
+
+---
+
+## Chores
+
+### `GET /api/v1/chores`
+List all active household chores.
+
+### `POST /api/v1/chores`
+Create a chore. Body: `{ "title": "Wash dishes", "points": 10, "assigned_member_ids": [2, 3], "frequency": "daily" }`
+
+### `PUT /api/v1/chores/{id}`
+Update a chore.
+
+### `DELETE /api/v1/chores/{id}`
+Deactivate a chore (soft delete).
+
+### `POST /api/v1/chores/complete`
+Log a chore completion. Body: `{ "chore_id": 1, "member_id": 2 }`
+
+### `POST /api/v1/chores/verify/{completion_id}`
+Parent verifies a chore completion. Body: `{ "verified_by": 1 }`
+
+### `GET /api/v1/chores/status?date=today`
+Today's chore status per member with completion tracking.
+
+---
+
+## Configuration
+
+### `GET /api/v1/config/household`
+Full household configuration.
+
+### `PUT /api/v1/config/household`
+Update config (e.g., set weekly reflection narrative).
+
+### `GET /api/v1/config/schema`
+Export all Pydantic model JSON Schemas.
+
+---
+
+## Google Calendar
+
+### `GET /api/v1/google-calendar/auth-url?member_id=X`
+Get OAuth2 authorization URL.
+
+### `POST /api/v1/google-calendar/callback`
+Handle OAuth2 callback.
+
+### `POST /api/v1/google-calendar/sync/{member_id}`
+Trigger two-way calendar sync.
+
+### `DELETE /api/v1/google-calendar/disconnect/{member_id}`
+Disconnect Google Calendar integration.
+
+---
+
+## Health Check
+
+### `GET /api/v1/health`
+Returns `{ "status": "ok", "version": "1.0.0", "uptime_seconds": int }`

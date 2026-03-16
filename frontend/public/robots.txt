@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /skill.json
+Allow: /api/
+Allow: /openapi.json
+Allow: /docs
+Disallow: /src/
+Disallow: /assets/
+
+# AI agents: see /llms.txt for structured API access instructions
+# Full API documentation: /llms-full.txt
+# Machine-readable schema: /openapi.json

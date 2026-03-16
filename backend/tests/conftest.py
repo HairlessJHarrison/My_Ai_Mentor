@@ -42,6 +42,15 @@ def _setup_db():
     SQLModel.metadata.drop_all(TEST_ENGINE)
 
 
+@pytest.fixture(autouse=True)
+def _clear_rate_limits():
+    """Clear rate limiter state between tests."""
+    import auth
+    auth._request_counts.clear()
+    yield
+    auth._request_counts.clear()
+
+
 @pytest.fixture()
 def session():
     """Yield a DB session bound to the in-memory test engine."""

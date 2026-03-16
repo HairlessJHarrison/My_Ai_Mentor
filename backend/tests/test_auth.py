@@ -28,4 +28,4 @@ class TestAuth:
                 "/api/v1/members",
                 headers={"Authorization": "Bearer wrong-key"},
             )
-            assert resp.status_code == 401
+            assert resp.status_code == 403
