@@ -11,6 +11,12 @@
     },
     "tools": [
         {
+            "name": "get_ai_context",
+            "description": "Get a complete household snapshot in a single call: config, members, today's schedule and free blocks, today's meals, budget summary, today's score, active presence session, and pending chores. Start here.",
+            "method": "GET",
+            "path": "/ai/context"
+        },
+        {
             "name": "get_today_schedule",
             "description": "Get today's schedule events and free time blocks",
             "method": "GET",

@@ -111,7 +111,12 @@ async def get_member_score(
             Activity.date <= today,
         )
     ).all()
-    activity_points = sum(a.points_earned for a in activities)
+    # Filter to activities where this member was a participant
+    # If participant_member_ids is empty (legacy data), include for all members
+    activity_points = sum(
+        a.points_earned for a in activities
+        if not a.participant_member_ids or member_id in (a.participant_member_ids or [])
+    )
 
     # Goal completion points
     goal_completions = session.exec(

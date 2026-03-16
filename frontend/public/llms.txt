@@ -1,0 +1,57 @@
+# Unplugged — AI Agent Instructions
+
+> This is a household management system running on a local Raspberry Pi.
+> AI agents should use the structured REST API, not the HTML frontend.
+
+## Authentication
+
+All API requests require a Bearer token in the `Authorization` header:
+
+```
+Authorization: Bearer <UNPLUGGED_API_KEY>
+```
+
+If no `API_KEY` environment variable is set on the server, auth is bypassed (development mode).
+
+## Quick Start (Recommended First Calls)
+
+1. `GET /api/v1/ai/context` — **Start here.** Returns a full household snapshot (members, today's schedule, meals, budget, scores, chores) in a single call.
+2. `GET /api/v1/config/household` — Get household preferences, dietary restrictions, and health goals.
+3. `GET /api/v1/members` — List all family members with roles and colors.
+4. `GET /api/v1/schedules/free-blocks?days=7` — Find available family time windows.
+
+## Full API Reference
+
+- **OpenAPI Schema (JSON):** `/openapi.json`
+- **Interactive Swagger Docs:** `/docs`
+- **All Data Model Schemas:** `/api/v1/config/schema`
+- **OpenClaw Skill Definition:** `/skill.json`
+- **Complete API Documentation:** `/llms-full.txt`
+
+## Data Modules
+
+| Module | Read | Write | Key Endpoint |
+|--------|------|-------|-------------|
+| Schedules | ✅ | ✅ | `GET /api/v1/schedules/today` |
+| Free Blocks | ✅ | — | `GET /api/v1/schedules/free-blocks?days=7` |
+| Meals | ✅ | ✅ | `GET /api/v1/meals/plan?week=current` |
+| Grocery List | ✅ | — | `GET /api/v1/meals/grocery-list` |
+| Budgets | ✅ | ✅ | `GET /api/v1/budgets/summary?month=current` |
+| Transactions | ✅ | ✅ | `POST /api/v1/budgets/transactions` |
+| Scoring | ✅ | ✅ | `POST /api/v1/scoring/log-activity` |
+| Presence | ✅ | ✅ | `POST /api/v1/presence/start` |
+| Members | ✅ | ✅ | `GET /api/v1/members` |
+| Goals | ✅ | ✅ | `GET /api/v1/goals?member_id=X` |
+| Chores | ✅ | ✅ | `GET /api/v1/chores/status?date=today` |
+| Google Cal | ✅ | ✅ | `POST /api/v1/google-calendar/sync/{member_id}` |
+
+## Content Negotiation
+
+All API responses are `application/json`. All request bodies must be `application/json` (except CSV import which uses `multipart/form-data`).
+
+## Real-Time Updates
+
+Connect to `ws://HOST/ws` for live push events when data changes:
+- `schedule_updated`, `meal_plan_changed`, `transaction_logged`
+- `activity_scored`, `presence_started`, `presence_ended`
+- `goal_completed`, `chore_completed`, `chore_verified`

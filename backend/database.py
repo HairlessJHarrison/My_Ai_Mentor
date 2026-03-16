@@ -25,6 +25,13 @@ def migrate_chore_schedule_columns():
             conn.execute(f"ALTER TABLE chores ADD COLUMN {col} {col_type}")
         except sqlite3.OperationalError:
             pass  # column already exists
+
+    # Add participant_member_ids to activities table
+    try:
+        conn.execute("ALTER TABLE activities ADD COLUMN participant_member_ids TEXT DEFAULT '[]'")
+    except sqlite3.OperationalError:
+        pass  # column already exists
+
     conn.commit()
     conn.close()
 

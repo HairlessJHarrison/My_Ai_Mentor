@@ -23,11 +23,20 @@ async def log_activity(
     session: Session = Depends(get_session),
     _auth: str = Depends(verify_api_key),
 ):
-    """Log a scored activity. Points are calculated server-side."""
+    """Log a scored activity. Points are calculated server-side.
+
+    If participant_member_ids is provided, participants_count is auto-set
+    to the length of that list, and each member earns the calculated points.
+    """
+    # Auto-infer participants_count from member IDs if provided
+    participants_count = body.participants_count
+    if body.participant_member_ids:
+        participants_count = len(body.participant_member_ids)
+
     points, multipliers = calculate_points(
         activity_type=body.activity_type,
         duration_min=body.duration_min,
-        participants_count=body.participants_count,
+        participants_count=participants_count,
         session=session,
         household_id=HOUSEHOLD_ID,
         details=body.details,
@@ -38,7 +47,8 @@ async def log_activity(
         date=dt.date.today(),
         activity_type=body.activity_type,
         duration_min=body.duration_min,
-        participants_count=body.participants_count,
+        participants_count=participants_count,
+        participant_member_ids=body.participant_member_ids,
         details=body.details,
         points_earned=points,
         multipliers_applied=multipliers,

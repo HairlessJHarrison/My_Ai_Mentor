@@ -199,10 +199,52 @@ PYTHONPATH=. pytest tests/ -v --cov=. --cov-report=term-missing
 
 ## What Needs to Be Done Next
 
-### Scoring Engine Full Refactor (DEFERRED)
-- Refactor `backend/services/scoring_engine.py` to award family activity points per participant member_id (not just household-wide)
-- Add `participant_member_ids: list[int]` field to Activity model
-- Update `POST /scoring/log-activity` to accept and store participant member IDs
+### Scoring Engine Full Refactor ✅ (COMPLETED)
+- Added `participant_member_ids: list[int]` field to Activity model
+- Updated `POST /scoring/log-activity` to accept and store participant member IDs
+- Auto-infers `participants_count` from member ID list length
+- Updated `GET /members/{id}/score` to filter activities by participant membership
+- Added database migration for `participant_member_ids` column
+
+---
+
+### Phase 12: AI Data Interfaces ✅
+
+Made the application discoverable and consumable by AI agents/LLMs:
+
+**Files Created:**
+- `frontend/public/llms.txt` — AI agent instructions with auth, quick-start, and module table
+- `frontend/public/llms-full.txt` — Complete API reference with every endpoint documented
+- `frontend/public/robots.txt` — AI crawler directives
+- `backend/api/ai_context.py` — `GET /api/v1/ai/context` consolidated snapshot endpoint
+
+**Files Modified:**
+- `frontend/index.html` — Added `llms-txt` meta tag and OpenAPI alternate link
+- `nginx/nginx.conf` — Added proxy blocks for `/docs`, `/redoc`, `/openapi.json`, `/skill.json`
+- `docker-compose.yml` — Added `skill.json` volume mount to Nginx container
+- `backend/main.py` — Enriched OpenAPI metadata (tags, descriptions, contact, license)
+- `openclaw-skill/skill.json` — Added `get_ai_context` tool as first entry
+
+---
+
+### Phase 13: V1.0 Features ✅
+
+**Schema-Driven Forms:**
+- `frontend/src/components/SchemaForm.jsx` — Reusable component that dynamically renders form fields from JSON Schema fetched from `/api/v1/config/schema`
+
+**Weekly Reflection View:**
+- `frontend/src/views/ReflectionView.jsx` — Weekly narrative display, week-over-week comparison, per-member score progress bars, and 4-week trend chart
+- Added `/reflection` route to `App.jsx`
+- Added "View Weekly Reflection" link to ScoreCard dashboard component
+
+**PWA Offline Support:**
+- `frontend/public/manifest.json` — PWA manifest with dark theme and standalone display
+- `frontend/public/sw.js` — Service worker with network-first API caching and cache-first static assets
+- Registered service worker in `index.html`
+
+**Auth Hardening & Rate Limiting:**
+- Rewrote `backend/auth.py` with in-memory rate limiting (configurable via `RATE_LIMIT_REQUESTS` and `RATE_LIMIT_WINDOW` env vars)
+- Clear error messages: 401 for missing key, 403 for invalid key, 429 with `Retry-After` header for rate limit
 
 ---
 
@@ -220,11 +262,12 @@ python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
 # Then visit http://localhost:8000/docs for Swagger UI
 ```
 
-## API Endpoint Summary (63 total)
+## API Endpoint Summary (65 total)
 
 | Module | Endpoints | Prefix |
 |--------|-----------|--------|
 | Health | 1 | `/api/v1/health` |
+| AI Context | 1 | `/api/v1/ai/` |
 | Schedules | 10 | `/api/v1/schedules/` |
 | Meals | 6 | `/api/v1/meals/` |
 | Budgets | 11 | `/api/v1/budgets/` |
@@ -236,3 +279,4 @@ python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
 | Chores | 7 | `/api/v1/chores/` |
 | Google Calendar | 4 | `/api/v1/google-calendar/` |
 | WebSocket | 1 | `/ws` |
+

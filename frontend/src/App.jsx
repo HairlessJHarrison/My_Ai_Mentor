@@ -9,6 +9,7 @@ import ScoringView from './views/ScoringView';
 import GoalsView from './views/GoalsView';
 import ChoresView from './views/ChoresView';
 import CalendarView from './views/CalendarView';
+import ReflectionView from './views/ReflectionView';
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="/goals" element={<GoalsView />} />
           <Route path="/chores" element={<ChoresView />} />
           <Route path="/calendar" element={<CalendarView />} />
+          <Route path="/reflection" element={<ReflectionView />} />
         </Routes>
       </HouseholdProvider>
     </BrowserRouter>
