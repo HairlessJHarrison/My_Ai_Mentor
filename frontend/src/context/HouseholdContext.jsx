@@ -14,11 +14,12 @@ export function HouseholdProvider({ children }) {
     const [members, setMembers] = useState([]);
     const [goals, setGoals] = useState([]);
     const [chores, setChores] = useState({ members: [] });
+    const [todos, setTodos] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const refresh = useCallback(async () => {
         try {
-            const [sched, meal, budg, score, pres, conf, mem, gls, chs] = await Promise.all([
+            const [sched, meal, budg, score, pres, conf, mem, gls, chs, tds] = await Promise.all([
                 get('/schedules/today'),
                 get('/meals/plan?week=current'),
                 get('/budgets/summary?month=current'),
@@ -28,6 +29,7 @@ export function HouseholdProvider({ children }) {
                 get('/members'),
                 get('/goals'),
                 get('/chores/status'),
+                get('/todos'),
             ]);
             setSchedule(sched);
             setMeals(meal);
@@ -38,6 +40,7 @@ export function HouseholdProvider({ children }) {
             setMembers(mem);
             setGoals(gls);
             setChores(chs);
+            setTodos(tds);
         } catch (e) {
             console.error('Failed to load data:', e);
         } finally {
@@ -82,6 +85,9 @@ export function HouseholdProvider({ children }) {
             case 'calendar_synced':
                 refresh();
                 break;
+            case 'todo_updated':
+                get('/todos').then(setTodos).catch(() => { });
+                break;
         }
     }, [refresh]);
 
@@ -90,7 +96,7 @@ export function HouseholdProvider({ children }) {
     return (
         <HouseholdContext.Provider value={{
             schedule, meals, budget, scoring, presence, config,
-            members, goals, chores,
+            members, goals, chores, todos,
             loading, connected, refresh, setPresence,
         }}>
             {children}

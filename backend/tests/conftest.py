@@ -266,3 +266,19 @@ def make_presence(session: Session, **overrides) -> "PresenceSession":
     session.commit()
     session.refresh(p)
     return p
+
+
+def make_todo(session: Session, **overrides) -> "TodoItem":
+    from models.todo import TodoItem
+    defaults = dict(
+        household_id="default",
+        title="Test Todo",
+        priority="medium",
+        is_completed=False,
+    )
+    defaults.update(overrides)
+    t = TodoItem(**defaults)
+    session.add(t)
+    session.commit()
+    session.refresh(t)
+    return t
