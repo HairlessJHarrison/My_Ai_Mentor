@@ -26,6 +26,7 @@ from api.goals import router as goals_router
 from api.chores import router as chores_router
 from api.google_calendar import router as google_calendar_router
 from api.ai_context import router as ai_context_router
+from api.todos import router as todos_router
 
 START_TIME = time.time()
 
@@ -49,6 +50,7 @@ tags_metadata = [
     {"name": "Goals", "description": "Personal goals with streak tracking and point rewards."},
     {"name": "Chores", "description": "Household chore management with completion tracking and parent verification."},
     {"name": "Google Calendar", "description": "OAuth2-based two-way Google Calendar sync."},
+    {"name": "To-Dos", "description": "One-off to-do items with priority, due dates, and member assignment."},
 ]
 
 app = FastAPI(
@@ -95,6 +97,7 @@ app.include_router(goals_router)
 app.include_router(chores_router)
 app.include_router(google_calendar_router)
 app.include_router(ai_context_router)
+app.include_router(todos_router)
 
 
 @app.get("/api/v1/health")

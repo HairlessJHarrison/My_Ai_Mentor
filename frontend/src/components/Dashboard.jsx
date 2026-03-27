@@ -8,6 +8,7 @@ import BudgetCard from './BudgetCard';
 import ScoreCard from './ScoreCard';
 import GoalCard from './GoalCard';
 import ChoreCard from './ChoreCard';
+import TodoCard from './TodoCard';
 import OnboardingWizard from './OnboardingWizard';
 
 export default function Dashboard() {
@@ -93,6 +94,7 @@ export default function Dashboard() {
                 <ScoreCard />
                 <GoalCard />
                 <ChoreCard />
+                <TodoCard />
             </div>
 
             {/* Unplugged Button */}

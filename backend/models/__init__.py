@@ -9,6 +9,7 @@ from .member import Member, MemberCreate, MemberUpdate
 from .goal import PersonalGoal, PersonalGoalCreate, PersonalGoalUpdate, GoalCompletion, GoalCompleteRequest
 from .chore import Chore, ChoreCreate, ChoreUpdate, ChoreCompletion, ChoreCompleteRequest
 from .csv_mapping import CsvColumnMapping, CsvColumnMappingCreate
+from .todo import TodoItem, TodoItemCreate, TodoItemUpdate
 
 __all__ = [
     "ScheduleEvent", "ScheduleEventCreate", "ScheduleEventUpdate",
@@ -24,4 +25,5 @@ __all__ = [
     "Chore", "ChoreCreate", "ChoreUpdate",
     "ChoreCompletion", "ChoreCompleteRequest",
     "CsvColumnMapping", "CsvColumnMappingCreate",
+    "TodoItem", "TodoItemCreate", "TodoItemUpdate",
 ]
