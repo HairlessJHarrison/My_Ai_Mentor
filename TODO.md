@@ -6,6 +6,10 @@
 - Updated `PROGRESS.md` to track Phase 14 Deployment Documentation [AGG3.1]
 - Updated `TESTING.md` to add manual verification tests for Ubuntu deployment security stack (UFW, fail2ban) [AGG3.1]
 - Updated `backend/TESTING.md` with Ubuntu-specific performance monitoring steps for the Raspberry Pi testing section [AGG3.1]
+- Successfully deployed Unplugged to Raspberry Pi (Ubuntu 24.04.4 LTS) over remote SSH, completing server setup (UFW, Fail2ban, Docker) [AGG3.1]
+- Fixed Nginx `docker-compose.yml` configuration crash by updating mount point to `/etc/nginx/conf.d/default.conf` rather than overwriting global root [AGG3.1]
+- Exposed Google OAuth API environment variables to the backend FastAPI Docker containers in `docker-compose.yml` to resolve `GOOGLE_CLIENT_ID` missing keys [AGG3.1]
+- Compiled and pushed production UI bundle (`frontend/dist`) to the Pi [AGG3.1]
 
 ## Technical Debt & Maintenance (V1.0 Remaining)
 - Upgrade to timezone-aware datetimes to resolve `datetime.utcnow()` deprecation warnings across Pydantic models and SQLModel schema defs [AGG3.1]
