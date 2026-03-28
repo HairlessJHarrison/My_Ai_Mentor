@@ -248,12 +248,20 @@ Made the application discoverable and consumable by AI agents/LLMs:
 
 ---
 
+### Phase 14: Deployment Documentation ✅
+
+- Updated `PRD.md`, `STARTUP.md`, `PROGRESS.md`, and `TESTING.md` with explicit instructions for hosting on a Raspberry Pi 4B (8GB) running Ubuntu 24.04.4 Server LTS.
+- Added comprehensive Production Deployment Guide covering UFW Firewall, Fail2ban, SSH key-only auth, and Router DHCP Reservation.
+- Added warnings concerning SD card wear-leveling and the future migration goal for an external USB SSD.
+
+---
+
 ## Tech Stack Reference
 - **Backend:** Python 3.12, FastAPI 0.135.1, SQLModel 0.0.37, Pydantic 2.12.5, SQLite
 - **Frontend:** React 19, Vite 7, Tailwind CSS 4, React Router 7
 - **Deployment:** Docker Compose, Nginx
 - **External APIs (Phase 10):** Google Calendar API, Google Maps Directions API
-- **Target:** Raspberry Pi 4B (8GB) — local-first, privacy-focused
+- **Target:** Raspberry Pi 4B (8GB) running Ubuntu 24.04.4 Server LTS — local-first, privacy-focused
 
 ## How to Run
 ```bash

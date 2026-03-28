@@ -207,6 +207,44 @@ PYTHONPATH=. pytest tests/test_my_feature.py -v --tb=short
 
 ---
 
+## Deployment Verification (Ubuntu / Raspberry Pi)
+
+When deploying to the Raspberry Pi 4B (Ubuntu 24.04.4 LTS), run these manual verification steps to ensure the security layer and Docker containers are working correctly:
+
+### 1. Verify Firewall (UFW)
+Ensure UFW is active and only exposing Port 80 and SSH (Port 22).
+
+```bash
+sudo ufw status verbose
+```
+**Expected Output:** Active, default deny incoming. Port 80 and `LIMIT` on Port 22/tcp.
+
+### 2. Verify Fail2ban
+Ensure Fail2ban is active and protecting SSH.
+
+```bash
+sudo systemctl status fail2ban
+sudo fail2ban-client status
+```
+**Expected Output:** Active (running). 1 jail active (sshd).
+
+### 3. Verify Docker Services
+
+```bash
+docker compose ps
+```
+**Expected Output:** Both `api` and `nginx` containers showing `Up`.
+
+### 4. Verify SQLite Permissions
+Ensure the API container has write access to the database volume.
+
+```bash
+docker compose logs api | grep "sqlite"
+# or trigger an API write and check for "attempt to write a readonly database" errors
+```
+
+---
+
 ## Known Warnings
 
 All 242 warnings are `DeprecationWarning: datetime.datetime.utcnow()` from Pydantic/SQLModel defaults. These are harmless and will resolve when upgrading to timezone-aware datetimes in a future release.

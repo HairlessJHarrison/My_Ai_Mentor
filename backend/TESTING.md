@@ -279,33 +279,47 @@ Open browser to `http://localhost:5173` (dev) or `http://localhost` (production)
 
 ---
 
-### 5. Raspberry Pi Performance Testing
+### 5. Raspberry Pi Performance Testing (Ubuntu 24.04 LTS)
 
-1. Deploy via Docker Compose on Pi (ARM64 images)
-
-2. Seed data:
+1. SSH into the Raspberry Pi:
    ```bash
-   python scripts/seed.py
+   ssh ubuntu@<static-ip>
    ```
 
-3. Measure response times:
+2. Deploy via Docker Compose on Pi (Ubuntu ARM64):
+   ```bash
+   cd /path/to/My_AI_Mentor
+   docker compose up -d
+   ```
+
+3. Seed data:
+   ```bash
+   docker compose exec api python scripts/seed.py
+   ```
+
+4. Measure response times natively via curl:
    ```bash
    time curl http://localhost/api/v1/budgets/summary
    time curl http://localhost/api/v1/schedules/free-blocks?days=30
    ```
    Target: < 500ms for typical queries
 
-4. Monitor resources during usage:
+5. Monitor resources during usage:
+   Open two SSH sessions. In one session, run htop to monitor overall Ubuntu system load:
+   ```bash
+   htop
+   ```
+   In the other, monitor Docker-specific container overhead:
    ```bash
    docker stats
    ```
 
-5. Check database size:
+6. Check database size:
    ```bash
-   ls -la data/unplugged.db
+   ls -la backend/data/unplugged.db
    ```
 
-6. Leave running 24+ hours — verify no crashes or memory leaks via `docker stats` or system monitoring.
+7. Leave running 24+ hours — verify no crashes or memory leaks via `docker stats`. Watch for excessive I/O wait (%) in `htop` which could indicate SD card wear/bottlenecking from SQLite writes.
 
 ---
 

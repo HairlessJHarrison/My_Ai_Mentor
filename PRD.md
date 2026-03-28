@@ -2,7 +2,7 @@
 
 > **Version:** 3.0 | **Date:** March 2026 | **Status:** MVP Complete — Phase 2 Features In Progress
 >
-> **One-liner:** A household data platform and visual dashboard hosted on a Raspberry Pi 4B (8GB), serving as the knowledge base and tool layer for an OpenClaw autonomous AI agent to manage schedules, meals, budgets, and presence scoring — all in service of maximizing screen-free family time.
+> **One-liner:** A household data platform and visual dashboard hosted on a Raspberry Pi 4B (8GB) running Ubuntu 24.04.4 Server LTS, serving as the knowledge base and tool layer for an OpenClaw autonomous AI agent to manage schedules, meals, budgets, and presence scoring — all in service of maximizing screen-free family time.
 
 ---
 
@@ -49,7 +49,7 @@ Unplugged does **not** host or run any AI model. It does **not** provide a chat 
                    [View Dashboard]
                         │
 ┌───────────────────────┴─────────────────────────┐
-│  RASPBERRY PI 4B (8GB)                          │
+│  RASPBERRY PI 4B (8GB) / UBUNTU 24.04.4 LTS     │
 │  ┌───────────────────────────────────────────┐  │
 │  │  Nginx (reverse proxy + static frontend)  │  │
 │  └─────────────────────┬─────────────────────┘  │
@@ -104,10 +104,10 @@ Every piece of the system serves exactly two consumers:
 | **Real-time** | WebSocket (FastAPI native) | Push updates to dashboard when OpenClaw modifies data. No polling. |
 | **Task Scheduler** | APScheduler (in-process) | Daily free-block analysis, automated backups. Runs inside the API process. |
 | **Auth** | API key (Phase 1, local network) | Simple bearer token in request header. JWT + OAuth2 for Phase 2 cloud. |
-| **Containerization** | Docker Compose (ARM64 images) | Two containers: Nginx + FastAPI. Identical topology for Pi and cloud. |
+| **Containerization** | Docker Compose (ARM64 images) | Two containers: Nginx + FastAPI. Identical topology for Pi and cloud. Native Ubuntu ARM64 support. |
 | **Reverse Proxy** | Nginx | Serves static React build, proxies `/api/*` to FastAPI, handles WebSocket upgrade. |
 
-### 3.2 Resource Budget (Pi 4B 8GB)
+### 3.2 Resource Budget (Pi 4B 8GB on Ubuntu 24.04.4 LTS)
 
 | Service | RAM | Notes |
 |---------|-----|-------|

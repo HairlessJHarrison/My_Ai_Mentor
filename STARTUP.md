@@ -138,3 +138,67 @@ PYTHONPATH=. pytest tests/ -v --cov=. --cov-report=term-missing
 - **Backend:** FastAPI 0.115, Uvicorn, SQLModel, SQLite, Python 3.12
 - **Frontend:** React 19, Vite 7, Tailwind CSS 4, React Router 7
 - **Database:** SQLite (auto-created at `backend/data/unplugged.db`)
+
+---
+
+## Production Deployment (Ubuntu 24.04.4 Server LTS on Raspberry Pi 4B)
+
+If you are hosting Unplugged on a Raspberry Pi 4B over a network with internet access, follow these security and deployment instructions.
+
+### 1. Security & Firewall (UFW)
+Exposing a Raspberry Pi to the internet or an untrusted network requires strict security. We use Uncomplicated Firewall (UFW) and Fail2ban.
+
+```bash
+# Update system
+sudo apt update && sudo apt upgrade -y
+
+# Install dependencies and security tools
+sudo apt install docker.io docker-compose-v2 git ufw fail2ban -y
+
+# Configure UFW Firewall (Only allow HTTP and SSH)
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw limit ssh comment 'Rate limit SSH to prevent brute force'
+sudo ufw allow 80/tcp comment 'Allow HTTP for Nginx dashboard'
+# DONT open port 8000 externally unless explicitly needed; Nginx proxies it via port 80.
+sudo ufw enable
+```
+
+**WARNING:** Do not use simple passwords for the `ubuntu` or `root` user. It is highly recommended to set up SSH keys (`ssh-keygen`, `ssh-copy-id`) and disable password authentication entirely by editing `/etc/ssh/sshd_config` (`PasswordAuthentication no`).
+
+### 2. Network / Static IP Configuration
+To ensure the dashboard and OpenClaw AI agent can always reach Unplugged, it needs a static IP.
+
+**Recommended Method (Router DHCP Reservation):**
+*Do not* configure a static IP on the Pi itself using Netplan. Instead, log into your home network router (usually `192.168.1.1` or `10.0.0.1`), find the DHCP/LAN settings, locate your Raspberry Pi's MAC address, and assign it a permanent IP (e.g., `192.168.1.50`). This prevents IP conflicts and maintains plug-and-play capability if you ever change routers.
+
+> **Note on Outside Access:** Do *not* open Port 80 on your router (Port Forwarding) to expose this to the open internet. Use a secure overlay network like **Tailscale** or a reverse proxy like **Cloudflare Tunnels** to access the dashboard remotely without exposing your home network to malicious scanners.
+
+### 3. Storage Warning (SD Card Wear)
+Raspberry Pis boot from SD cards by default. Because Unplugged uses an SQLite database that performs frequent writes, **the SD card will eventually suffer from wear-leveling failure / corruption**.
+- **Phase 2 Goal:** Plan to move the `backend/data` directory to an external USB SSD drive, or configure the Raspberry Pi to boot entirely from a USB SSD.
+
+### 4. Running the Application via Docker
+Once security is configured, start Unplugged using Docker Compose:
+
+```bash
+# Enable Docker to start on boot
+sudo systemctl enable --now docker
+
+# Allow your user to run docker commands without sudo
+sudo usermod -aG docker $USER
+newgrp docker
+
+# Navigate to the repo
+cd /path/to/My_AI_Mentor
+
+# Create the .env file with your production keys
+cp .env.example .env
+
+# Create data directory and define open permissions so Docker SQLite can write to it
+mkdir -p backend/data
+chmod 777 backend/data
+
+# Start the stack in the background
+docker compose up -d
+```
