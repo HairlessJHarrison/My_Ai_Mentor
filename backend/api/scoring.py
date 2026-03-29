@@ -99,3 +99,27 @@ async def get_streaks_endpoint(
 ):
     """Current active streaks."""
     return {"streaks": get_streaks(session, HOUSEHOLD_ID)}
+
+
+@router.get("/cup")
+async def get_cup_progress(
+    since: str = None,
+    session: Session = Depends(get_session),
+    _auth: str = Depends(verify_api_key),
+):
+    """Achievement cup progress since a specific date."""
+    query = select(Activity).where(Activity.household_id == HOUSEHOLD_ID)
+    if since:
+        try:
+            since_date = dt.datetime.fromisoformat(since).date()
+            query = query.where(Activity.date >= since_date)
+        except ValueError:
+            pass
+
+    activities = session.exec(query.order_by(Activity.date.desc(), Activity.id.desc())).all()
+    total_points = sum(a.points_earned for a in activities)
+    
+    return {
+        "activities": [a.model_dump(mode="json") for a in activities],
+        "total_points": total_points,
+    }

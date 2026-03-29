@@ -13,7 +13,7 @@ API_KEY = os.getenv("UNPLUGGED_API_KEY")
 
 # --- Rate Limiting ---
 # Simple in-memory rate limiter. For production at scale, use Redis-backed solutions.
-RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "60"))  # requests per window
+RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "600"))  # requests per window
 RATE_LIMIT_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW", "60"))  # window in seconds
 
 _request_counts: dict[str, list[float]] = defaultdict(list)

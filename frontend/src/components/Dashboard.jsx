@@ -5,11 +5,14 @@ import { post } from '../hooks/useApi';
 import ScheduleCard from './ScheduleCard';
 import MealCard from './MealCard';
 import BudgetCard from './BudgetCard';
-import ScoreCard from './ScoreCard';
+import AchievementCupCard from './AchievementCupCard';
 import GoalCard from './GoalCard';
 import ChoreCard from './ChoreCard';
 import TodoCard from './TodoCard';
 import OnboardingWizard from './OnboardingWizard';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
+import SortableCardWrapper from './SortableCardWrapper';
 
 export default function Dashboard() {
     const navigate = useNavigate();
@@ -17,6 +20,40 @@ export default function Dashboard() {
     const [startingSession, setStartingSession] = useState(false);
     const [showUnplugDialog, setShowUnplugDialog] = useState(false);
     const [duration, setDuration] = useState(30);
+
+    const defaultLayout = ['cup', 'schedule', 'meal', 'budget', 'goal', 'chore', 'todo'];
+    const [cardOrder, setCardOrder] = useState(() => {
+        const saved = localStorage.getItem('unplugged_dashboard_layout');
+        return saved ? JSON.parse(saved) : defaultLayout;
+    });
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    );
+
+    const handleDragEnd = (event) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            setCardOrder((items) => {
+                const oldIndex = items.indexOf(active.id);
+                const newIndex = items.indexOf(over.id);
+                const newOrder = arrayMove(items, oldIndex, newIndex);
+                localStorage.setItem('unplugged_dashboard_layout', JSON.stringify(newOrder));
+                return newOrder;
+            });
+        }
+    };
+
+    const componentMap = {
+        schedule: <ScheduleCard />,
+        meal: <MealCard />,
+        budget: <BudgetCard />,
+        cup: <AchievementCupCard />,
+        goal: <GoalCard />,
+        chore: <ChoreCard />,
+        todo: <TodoCard />
+    };
 
     const today = new Date().toLocaleDateString('en-US', {
         weekday: 'long', month: 'long', day: 'numeric',
@@ -87,15 +124,17 @@ export default function Dashboard() {
             </header>
 
             {/* Dashboard cards grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                <ScheduleCard />
-                <MealCard />
-                <BudgetCard />
-                <ScoreCard />
-                <GoalCard />
-                <ChoreCard />
-                <TodoCard />
-            </div>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                    <SortableContext items={cardOrder} strategy={rectSortingStrategy}>
+                        {cardOrder.map(id => (
+                            <SortableCardWrapper key={id} id={id}>
+                                {componentMap[id]}
+                            </SortableCardWrapper>
+                        ))}
+                    </SortableContext>
+                </div>
+            </DndContext>
 
             {/* Unplugged Button */}
             <div className="flex justify-center">
