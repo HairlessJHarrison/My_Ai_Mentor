@@ -15,11 +15,12 @@ export function HouseholdProvider({ children }) {
     const [goals, setGoals] = useState([]);
     const [chores, setChores] = useState({ members: [] });
     const [todos, setTodos] = useState([]);
+    const [achievements, setAchievements] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const refresh = useCallback(async () => {
         try {
-            const [sched, meal, budg, score, pres, conf, mem, gls, chs, tds] = await Promise.all([
+            const [sched, meal, budg, score, pres, conf, mem, gls, chs, tds, achs] = await Promise.all([
                 get('/schedules/today'),
                 get('/meals/plan?week=current'),
                 get('/budgets/summary?month=current'),
@@ -30,6 +31,7 @@ export function HouseholdProvider({ children }) {
                 get('/goals'),
                 get('/chores/status'),
                 get('/todos'),
+                get('/achievements'),
             ]);
             setSchedule(sched);
             setMeals(meal);
@@ -41,6 +43,7 @@ export function HouseholdProvider({ children }) {
             setGoals(gls);
             setChores(chs);
             setTodos(tds);
+            setAchievements(achs);
         } catch (e) {
             console.error('Failed to load data:', e);
         } finally {
@@ -77,10 +80,15 @@ export function HouseholdProvider({ children }) {
             case 'goal_completed':
                 get('/goals').then(setGoals).catch(() => { });
                 get('/chores/status').then(setChores).catch(() => { });
+                get('/achievements').then(setAchievements).catch(() => { });
                 break;
             case 'chore_completed':
             case 'chore_verified':
                 get('/chores/status').then(setChores).catch(() => { });
+                get('/achievements').then(setAchievements).catch(() => { });
+                break;
+            case 'achievement_claimed':
+                get('/achievements').then(setAchievements).catch(() => { });
                 break;
             case 'calendar_synced':
                 refresh();
@@ -96,7 +104,7 @@ export function HouseholdProvider({ children }) {
     return (
         <HouseholdContext.Provider value={{
             schedule, meals, budget, scoring, presence, config,
-            members, goals, chores, todos,
+            members, goals, chores, todos, achievements,
             loading, connected, refresh, setPresence,
         }}>
             {children}

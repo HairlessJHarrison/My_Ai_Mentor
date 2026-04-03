@@ -6,10 +6,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Confetti from 'react-confetti';
 
 export default function AchievementCupCard() {
-    const { config, refresh } = useHousehold();
+    const { config, refresh, members } = useHousehold();
     const navigate = useNavigate();
-    
+
     const [cupData, setCupData] = useState({ activities: [], total_points: 0 });
+    const [memberAchievements, setMemberAchievements] = useState([]);
     const [showSettings, setShowSettings] = useState(false);
     const [showLog, setShowLog] = useState(false);
     const [pinEntryMode, setPinEntryMode] = useState(false);
@@ -17,7 +18,7 @@ export default function AchievementCupCard() {
     const [pinError, setPinError] = useState('');
     const [pendingAction, setPendingAction] = useState(null); // 'settings' or 'reset'
     const [showConfetti, setShowConfetti] = useState(false);
-    
+
     // Form state for settings
     const [form, setForm] = useState({
         prize_name: '',
@@ -40,12 +41,15 @@ export default function AchievementCupCard() {
         }
         get(url).then(data => {
             setCupData(data);
-            if (data.total_points >= goalPoints && goalPoints > 0 && data.total_points > 0) {
-                // If they hit the goal, maybe we show confetti once (we can do it simply here)
-                // For a real app, we might track 'confetti_shown' in localStorage
-            }
         }).catch(() => {});
     }, [lastReset, goalPoints]);
+
+    // Fetch active per-member achievements
+    useEffect(() => {
+        get('/achievements').then(all => {
+            setMemberAchievements(all.filter(a => a.is_active && !a.is_claimed));
+        }).catch(() => {});
+    }, []);
 
     // Handle Auth for protected actions
     const requirePin = (action) => {
@@ -122,10 +126,21 @@ export default function AchievementCupCard() {
     const currentPoints = cupData.total_points;
     const percent = Math.min((currentPoints / goalPoints) * 100, 100);
 
+    const getMemberColor = (memberId) => {
+        const m = members?.find(m => m.id === memberId);
+        return m?.color || '#888';
+    };
+    const getMemberName = (memberId) => {
+        const m = members?.find(m => m.id === memberId);
+        return m?.name || '?';
+    };
+
     return (
-        <div className="card-animated bg-surface-800 rounded-2xl p-5 relative overflow-hidden h-full flex flex-col" style={{ animationDelay: '0.4s' }}>
+        <div className="card-animated bg-surface-800 rounded-2xl p-5 relative overflow-hidden h-full flex flex-col cursor-pointer"
+             style={{ animationDelay: '0.4s' }}
+             onClick={() => navigate('/achievements')}>
             {showConfetti && <Confetti width={500} height={500} recycle={false} numberOfPieces={200} className="absolute inset-0 z-50 pointer-events-none" />}
-            
+
             <div className="flex items-center justify-between mb-4 z-10 relative">
                 <h3 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
                     <span className="text-xl">🏆</span> Achievement Cup
@@ -185,6 +200,31 @@ export default function AchievementCupCard() {
                     </button>
                 )}
             </div>
+
+            {/* Per-member achievements summary */}
+            {memberAchievements.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-surface-700/50 z-10 relative">
+                    <p className="text-[10px] text-surface-500 uppercase tracking-wider mb-2">Member Goals</p>
+                    <div className="space-y-1.5">
+                        {memberAchievements.slice(0, 3).map(ach => {
+                            const pct = ach.percent || 0;
+                            return (
+                                <div key={ach.id} className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getMemberColor(ach.member_id) }} />
+                                    <span className="text-xs text-surface-300 truncate flex-1">{getMemberName(ach.member_id)}: {ach.prize_name}</span>
+                                    <div className="w-12 bg-surface-700 rounded-full h-1">
+                                        <div className="bg-amber-500 h-1 rounded-full" style={{ width: `${pct}%` }} />
+                                    </div>
+                                    <span className="text-[10px] text-surface-500 w-8 text-right">{Math.round(pct)}%</span>
+                                </div>
+                            );
+                        })}
+                        {memberAchievements.length > 3 && (
+                            <p className="text-[10px] text-surface-500 text-center">+{memberAchievements.length - 3} more</p>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* PIN Entry Modal */}
             <AnimatePresence>

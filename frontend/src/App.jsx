@@ -12,6 +12,7 @@ import TodoView from './views/TodoView';
 import CalendarView from './views/CalendarView';
 import ReflectionView from './views/ReflectionView';
 import SettingsView from './views/SettingsView';
+import AchievementsView from './views/AchievementsView';
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="/todos" element={<TodoView />} />
           <Route path="/calendar" element={<CalendarView />} />
           <Route path="/reflection" element={<ReflectionView />} />
+          <Route path="/achievements" element={<AchievementsView />} />
           <Route path="/settings" element={<SettingsView />} />
         </Routes>
       </HouseholdProvider>
