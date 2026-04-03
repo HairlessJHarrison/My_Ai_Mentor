@@ -1,15 +1,20 @@
+import asyncio
+import logging
 import os
 import time
 from contextlib import asynccontextmanager
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
-from database import create_db_and_tables, migrate_chore_schedule_columns
+from database import create_db_and_tables, get_session, migrate_chore_schedule_columns
 from websocket import manager
+
+logger = logging.getLogger("unplugged.autosync")
 
 # Import all models so SQLModel registers them
 import models  # noqa: F401
@@ -31,11 +36,48 @@ from api.todos import router as todos_router
 START_TIME = time.time()
 
 
+async def _auto_sync_all():
+    """Sync Google Calendar for all connected members."""
+    from sqlmodel import select
+    from models.member import Member
+    from services.google_calendar import sync_member_calendar
+
+    session = next(get_session())
+    try:
+        all_members = session.exec(select(Member)).all()
+        members = [m for m in all_members if m.google_credentials]
+        if not members:
+            return
+
+        for member in members:
+            try:
+                result = sync_member_calendar(member, session)
+                logger.info(
+                    "Auto-sync %s: imported=%d exported=%d updated=%d",
+                    member.name, result["imported"], result["exported"], result["updated"],
+                )
+                await manager.broadcast("calendar_synced", {
+                    "member_id": member.id,
+                    **result,
+                })
+            except Exception:
+                logger.exception("Auto-sync failed for member %s", member.name)
+    finally:
+        session.close()
+
+
+scheduler = AsyncIOScheduler()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
     migrate_chore_schedule_columns()
+    scheduler.add_job(_auto_sync_all, "interval", minutes=60, id="google_calendar_sync")
+    scheduler.start()
+    logger.info("Google Calendar auto-sync scheduled (every 60 minutes)")
     yield
+    scheduler.shutdown(wait=False)
 
 
 tags_metadata = [

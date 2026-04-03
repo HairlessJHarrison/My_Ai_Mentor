@@ -1,0 +1,225 @@
+import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useHousehold } from '../context/HouseholdContext';
+import { get, post, del } from '../hooks/useApi';
+
+export default function SettingsView() {
+    const navigate = useNavigate();
+    const { members, refresh } = useHousehold();
+    const [calendarStatus, setCalendarStatus] = useState({});
+    const [syncing, setSyncing] = useState(false);
+    const [syncResult, setSyncResult] = useState(null);
+    const [error, setError] = useState('');
+
+    const connectCalendar = useCallback(async (member) => {
+        setCalendarStatus((prev) => ({ ...prev, [member.id]: 'connecting' }));
+        setError('');
+        try {
+            const { url } = await get(`/google-calendar/auth-url?member_id=${member.id}`);
+            const popup = window.open(url, 'google-auth', 'width=500,height=600,left=200,top=100');
+
+            const poll = setInterval(async () => {
+                if (popup && popup.closed) {
+                    clearInterval(poll);
+                    try {
+                        await post(`/google-calendar/sync/${member.id}`);
+                        setCalendarStatus((prev) => ({ ...prev, [member.id]: 'connected' }));
+                        refresh();
+                    } catch {
+                        setCalendarStatus((prev) => ({ ...prev, [member.id]: 'failed' }));
+                    }
+                }
+            }, 1000);
+        } catch (e) {
+            setCalendarStatus((prev) => ({ ...prev, [member.id]: 'failed' }));
+            setError(e.message);
+        }
+    }, [refresh]);
+
+    const disconnectCalendar = useCallback(async (member) => {
+        setError('');
+        try {
+            await del(`/google-calendar/disconnect/${member.id}`);
+            setCalendarStatus((prev) => ({ ...prev, [member.id]: null }));
+            refresh();
+        } catch (e) {
+            setError(e.message);
+        }
+    }, [refresh]);
+
+    const syncAll = useCallback(async () => {
+        setSyncing(true);
+        setSyncResult(null);
+        setError('');
+        try {
+            const result = await post('/google-calendar/sync-all');
+            setSyncResult(result);
+            refresh();
+        } catch (e) {
+            setError(e.message);
+        } finally {
+            setSyncing(false);
+        }
+    }, [refresh]);
+
+    const hasAnyConnected = members.some(m => m.google_credentials);
+
+    return (
+        <div className="min-h-screen p-4 md:p-8 max-w-4xl mx-auto">
+            {/* Header */}
+            <header className="mb-8">
+                <button onClick={() => navigate('/')}
+                    className="text-surface-400 hover:text-surface-200 text-sm mb-4 flex items-center gap-1 transition-colors">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Back to Dashboard
+                </button>
+                <h1 className="text-2xl md:text-3xl font-bold text-surface-100">Settings</h1>
+            </header>
+
+            {/* Google Calendar Section */}
+            <section className="bg-surface-800/60 rounded-2xl border border-surface-700/50 p-6 mb-6">
+                <div className="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
+                            <svg className="w-5 h-5 text-ocean-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                <line x1="16" y1="2" x2="16" y2="6" />
+                                <line x1="8" y1="2" x2="8" y2="6" />
+                                <line x1="3" y1="10" x2="21" y2="10" />
+                            </svg>
+                            Google Calendar
+                        </h2>
+                        <p className="text-surface-400 text-sm mt-1">
+                            Connect calendars to sync events automatically every hour.
+                        </p>
+                    </div>
+
+                    {hasAnyConnected && (
+                        <button
+                            onClick={syncAll}
+                            disabled={syncing}
+                            className="px-4 py-2.5 bg-ocean-600/20 border border-ocean-600/30 text-ocean-300
+                                hover:bg-ocean-600/30 rounded-xl text-sm font-medium transition-colors
+                                min-h-[44px] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed
+                                flex items-center gap-2"
+                        >
+                            {syncing ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-ocean-400/30 border-t-ocean-400 rounded-full animate-spin" />
+                                    Syncing...
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round"
+                                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    Sync Now
+                                </>
+                            )}
+                        </button>
+                    )}
+                </div>
+
+                {/* Sync result banner */}
+                {syncResult && (
+                    <div className="mb-4 p-3 bg-forest-600/10 border border-forest-600/30 rounded-xl">
+                        <p className="text-forest-400 text-sm font-medium">
+                            Synced {syncResult.synced} calendar{syncResult.synced !== 1 ? 's' : ''}
+                            {syncResult.results && syncResult.results.length > 0 && (
+                                <span className="text-surface-400 font-normal">
+                                    {' '}&mdash;{' '}
+                                    {syncResult.results
+                                        .filter(r => !r.error)
+                                        .reduce((acc, r) => acc + r.imported + r.updated, 0)} events updated,{' '}
+                                    {syncResult.results
+                                        .filter(r => !r.error)
+                                        .reduce((acc, r) => acc + r.exported, 0)} exported
+                                </span>
+                            )}
+                        </p>
+                    </div>
+                )}
+
+                {error && (
+                    <div className="mb-4 p-3 bg-rose-600/10 border border-rose-600/30 rounded-xl">
+                        <p className="text-rose-400 text-sm">{error}</p>
+                    </div>
+                )}
+
+                {/* Member list */}
+                <div className="space-y-3">
+                    {members.map((m) => {
+                        const status = calendarStatus[m.id];
+                        const isConnected = status === 'connected' || m.google_credentials;
+                        const isConnecting = status === 'connecting';
+                        const isFailed = status === 'failed';
+                        const isDisconnected = status === null && !m.google_credentials;
+
+                        return (
+                            <div key={m.id}
+                                className="flex items-center justify-between p-4 bg-surface-700/50 rounded-xl border border-surface-600/50">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-2xl">{m.avatar || '👤'}</span>
+                                    <div>
+                                        <span className="text-surface-100 font-medium">{m.name}</span>
+                                        <span className="text-surface-500 text-xs ml-2 capitalize">{m.role}</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    {isConnected && !isDisconnected ? (
+                                        <>
+                                            <span className="flex items-center gap-1.5 text-forest-400 text-sm font-medium mr-2">
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                                Connected
+                                            </span>
+                                            <button
+                                                onClick={() => disconnectCalendar(m)}
+                                                className="px-3 py-2 bg-surface-600 hover:bg-rose-600/20 hover:text-rose-400
+                                                    text-surface-400 rounded-xl text-xs font-medium transition-colors min-h-[44px]"
+                                            >
+                                                Disconnect
+                                            </button>
+                                        </>
+                                    ) : isConnecting ? (
+                                        <span className="text-amber-400 text-sm flex items-center gap-2">
+                                            <div className="w-4 h-4 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+                                            Connecting...
+                                        </span>
+                                    ) : (
+                                        <button
+                                            onClick={() => connectCalendar(m)}
+                                            className="px-4 py-2.5 bg-surface-600 hover:bg-surface-500 text-surface-200 rounded-xl text-sm
+                                                font-medium transition-colors flex items-center gap-2 min-h-[44px] active:scale-[0.97]"
+                                        >
+                                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M19.5 3h-15A1.5 1.5 0 003 4.5v15A1.5 1.5 0 004.5 21h15a1.5 1.5 0 001.5-1.5v-15A1.5 1.5 0 0019.5 3zM12 17.25a.75.75 0 01-.75-.75v-3.75H7.5a.75.75 0 010-1.5h3.75V7.5a.75.75 0 011.5 0v3.75h3.75a.75.75 0 010 1.5h-3.75v3.75a.75.75 0 01-.75.75z" />
+                                            </svg>
+                                            {isFailed ? 'Retry' : 'Connect'}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Auto-sync info */}
+                {hasAnyConnected && (
+                    <div className="mt-4 flex items-center gap-2 text-surface-500 text-xs">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        Auto-syncs every hour in the background
+                    </div>
+                )}
+            </section>
+        </div>
+    );
+}

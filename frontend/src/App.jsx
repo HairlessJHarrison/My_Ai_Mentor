@@ -11,6 +11,7 @@ import ChoresView from './views/ChoresView';
 import TodoView from './views/TodoView';
 import CalendarView from './views/CalendarView';
 import ReflectionView from './views/ReflectionView';
+import SettingsView from './views/SettingsView';
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/todos" element={<TodoView />} />
           <Route path="/calendar" element={<CalendarView />} />
           <Route path="/reflection" element={<ReflectionView />} />
+          <Route path="/settings" element={<SettingsView />} />
         </Routes>
       </HouseholdProvider>
     </BrowserRouter>

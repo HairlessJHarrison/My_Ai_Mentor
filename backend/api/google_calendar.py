@@ -4,7 +4,7 @@ import os
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from auth import verify_api_key
 from database import get_session
@@ -98,6 +98,35 @@ async def sync_calendar(
         "updated": result["updated"],
     })
     return result
+
+
+@router.post("/sync-all")
+async def sync_all_calendars(
+    session: Session = Depends(get_session),
+    _auth: str = Depends(verify_api_key),
+):
+    """Trigger a two-way sync for all members with connected Google Calendars."""
+    all_members = session.exec(
+        select(Member).where(Member.household_id == HOUSEHOLD_ID)
+    ).all()
+    members = [m for m in all_members if m.google_credentials]
+
+    if not members:
+        return {"synced": 0, "results": []}
+
+    results = []
+    for member in members:
+        try:
+            result = sync_member_calendar(member, session)
+            await manager.broadcast("calendar_synced", {
+                "member_id": member.id,
+                **result,
+            })
+            results.append({"member_id": member.id, "name": member.name, **result})
+        except Exception as e:
+            results.append({"member_id": member.id, "name": member.name, "error": str(e)})
+
+    return {"synced": len(results), "results": results}
 
 
 @router.delete("/disconnect/{member_id}")

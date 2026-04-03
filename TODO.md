@@ -11,9 +11,20 @@
 - Exposed Google OAuth API environment variables to the backend FastAPI Docker containers in `docker-compose.yml` to resolve `GOOGLE_CLIENT_ID` missing keys [AGG3.1]
 - Compiled and pushed production UI bundle (`frontend/dist`) to the Pi [AGG3.1]
 
+- Added Google Calendar Settings page with connect/disconnect/sync UI accessible from dashboard gear icon
+- Added `POST /api/v1/google-calendar/sync-all` endpoint for bulk calendar sync
+- Added APScheduler hourly auto-sync for all connected Google Calendars
+- Created reusable `/deploy-to-pi` Claude Code skill for deploying any Docker Compose project to Pi
+- Established SSH key auth to Raspberry Pi for automated deployments
+- Fresh git clone deployed to Pi at `~/projects/My_AI_Mentor` with latest code
+
 ## Technical Debt & Maintenance (V1.0 Remaining)
 - Upgrade to timezone-aware datetimes to resolve `datetime.utcnow()` deprecation warnings across Pydantic models and SQLModel schema defs [AGG3.1]
 - Implement an automated daily database backup job (e.g., using APScheduler and `scripts/backup.sh` to copy the SQLite WAL to cloud storage) [AGG3.1]
+- Fix stale service worker cache causing blank page on fresh loads (clear `sw.js` cache or add cache-busting version) [V1.1]
+- Set up Google Cloud OAuth credentials (GOOGLE_CLIENT_ID/SECRET/REDIRECT_URI) for production calendar sync [V1.1]
+- Install Node.js on Pi for on-device frontend builds (currently built locally and scp'd) [V1.1]
+- Set up passwordless sudo on Pi for jharrison user to enable fully automated deployments [V1.1]
 
 ## Hardware & Deployment Enhancements
 - Migrate SQLite database from SD card to external USB SSD to prevent wear-leveling corruption over long-term use [AGG3.1]
