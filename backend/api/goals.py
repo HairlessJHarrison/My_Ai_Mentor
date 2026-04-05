@@ -12,6 +12,7 @@ from models.goal import (
     PersonalGoal, PersonalGoalCreate, PersonalGoalUpdate,
     GoalCompletion, GoalCompleteRequest,
 )
+from models.chore import ChoreCompletion
 from services.goal_tracker import calculate_goal_points, get_goal_progress
 from websocket import manager
 
@@ -118,6 +119,55 @@ async def complete_goal(
 
     await manager.broadcast("goal_completed", completion.model_dump(mode="json"))
     return completion
+
+
+@router.get("/points-history")
+async def get_points_history(
+    member_id: int = Query(..., description="Member ID"),
+    days: int = Query(30, ge=7, le=90, description="Number of days to look back"),
+    session: Session = Depends(get_session),
+    _auth: str = Depends(verify_api_key),
+):
+    """Points earned per day for a member, combining goals and chores."""
+    today = dt.date.today()
+    start = today - dt.timedelta(days=days - 1)
+
+    goal_completions = session.exec(
+        select(GoalCompletion).where(
+            GoalCompletion.household_id == HOUSEHOLD_ID,
+            GoalCompletion.member_id == member_id,
+            GoalCompletion.date >= start,
+            GoalCompletion.date <= today,
+        )
+    ).all()
+
+    chore_completions = session.exec(
+        select(ChoreCompletion).where(
+            ChoreCompletion.household_id == HOUSEHOLD_ID,
+            ChoreCompletion.member_id == member_id,
+            ChoreCompletion.date >= start,
+            ChoreCompletion.date <= today,
+        )
+    ).all()
+
+    data: dict[str, dict] = {}
+    for i in range(days):
+        d = start + dt.timedelta(days=i)
+        data[str(d)] = {"date": str(d), "goal_points": 0, "chore_points": 0, "total": 0}
+
+    for c in goal_completions:
+        key = str(c.date)
+        if key in data:
+            data[key]["goal_points"] += c.points_earned
+            data[key]["total"] += c.points_earned
+
+    for c in chore_completions:
+        key = str(c.date)
+        if key in data:
+            data[key]["chore_points"] += c.points_earned
+            data[key]["total"] += c.points_earned
+
+    return {"days": list(data.values())}
 
 
 @router.get("/progress")
