@@ -122,9 +122,9 @@ export default function AchievementsView() {
 
     const claimAchievement = async (id) => {
         try {
+            await post(`/achievements/${id}/claim`);
             setShowConfetti(true);
             setTimeout(() => setShowConfetti(false), 5000);
-            await post(`/achievements/${id}/claim`);
             await refreshAchievements();
         } catch (err) { alert(err.message); }
     };
@@ -247,10 +247,10 @@ export default function AchievementsView() {
                                                     transition={{ duration: 1, type: "spring", bounce: 0.3 }}
                                                 />
                                                 {ach.prize_image_url ? (
-                                                    <img src={ach.prize_image_url} alt="Prize" className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay" />
-                                                ) : (
-                                                    <span className="absolute inset-0 flex items-center justify-center text-2xl opacity-40">🎁</span>
-                                                )}
+                                                    <img src={ach.prize_image_url} alt="Prize" className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay"
+                                                        onError={e => { e.currentTarget.style.display = 'none'; }} />
+                                                ) : null}
+                                                <span className="absolute inset-0 flex items-center justify-center text-2xl opacity-40">🎁</span>
                                             </div>
                                             <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
                                                 <circle cx="50" cy="50" r="44" fill="none" stroke="transparent" strokeWidth="6" />
