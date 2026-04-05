@@ -107,7 +107,7 @@ async def complete_goal(
         household_id=goal.household_id,
         goal_id=body.goal_id,
         member_id=body.member_id,
-        date=dt.date.today(),
+        date=body.date if body.date is not None else dt.date.today(),
         duration_min=body.duration_min,
         notes=body.notes,
         points_earned=points,

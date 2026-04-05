@@ -57,5 +57,6 @@ class GoalCompletion(SQLModel, table=True):
 class GoalCompleteRequest(SQLModel):
     goal_id: int = Field(description="Which goal was completed")
     member_id: int = Field(description="Who completed it")
+    date: dt.date | None = Field(default=None, description="Completion date (defaults to today; use to log past completions)")
     duration_min: int | None = Field(default=None, description="Optional duration in minutes")
     notes: str | None = Field(default=None, description="Optional notes")
