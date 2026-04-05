@@ -72,6 +72,8 @@ async def create_achievement(
     _auth: str = Depends(verify_api_key),
 ):
     """Create a new achievement for a member."""
+    if body.target_points <= 0:
+        raise HTTPException(status_code=422, detail="target_points must be greater than 0")
     achievement = Achievement.model_validate(body)
     session.add(achievement)
     session.commit()
@@ -94,6 +96,8 @@ async def update_achievement(
         raise HTTPException(status_code=404, detail="Achievement not found")
 
     update_data = body.model_dump(exclude_unset=True)
+    if "target_points" in update_data and update_data["target_points"] <= 0:
+        raise HTTPException(status_code=422, detail="target_points must be greater than 0")
     for key, value in update_data.items():
         setattr(achievement, key, value)
 
