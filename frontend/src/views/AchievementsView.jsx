@@ -4,6 +4,7 @@ import { get, post, put, del } from '../hooks/useApi';
 import { useHousehold } from '../context/HouseholdContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Confetti from 'react-confetti';
+import PointsHistoryChart from '../components/PointsHistoryChart';
 
 export default function AchievementsView() {
     const navigate = useNavigate();
@@ -176,6 +177,9 @@ export default function AchievementsView() {
                     </button>
                 ))}
             </div>
+
+            {/* Points history chart */}
+            {selectedMember && <div className="mb-6"><PointsHistoryChart memberId={selectedMember} /></div>}
 
             {/* Create/Edit form */}
             <AnimatePresence>
