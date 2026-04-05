@@ -73,8 +73,12 @@ async def end_session(
     active.status = "completed"
     session.add(active)
 
-    # Calculate duration
-    duration_min = int((active.end_time - active.start_time).total_seconds() / 60)
+    # Calculate duration — SQLite returns naive datetimes; strip tzinfo so
+    # arithmetic between the newly set aware end_time and a naive start_time
+    # (read from SQLite) does not raise TypeError.
+    end_ts = active.end_time.replace(tzinfo=None)
+    start_ts = active.start_time.replace(tzinfo=None) if active.start_time.tzinfo else active.start_time
+    duration_min = int((end_ts - start_ts).total_seconds() / 60)
 
     # Auto-log activity
     points, multipliers = calculate_points(
@@ -131,7 +135,8 @@ async def get_stats(
     _auth: str = Depends(verify_api_key),
 ):
     """Unplugged session statistics."""
-    cutoff = dt.datetime.now(dt.timezone.utc) - dt.timedelta(weeks=weeks)
+    # Use a naive UTC cutoff so SQLite (which strips tzinfo on read) can compare
+    cutoff = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(weeks=weeks)).replace(tzinfo=None)
 
     sessions = session.exec(
         select(PresenceSession).where(
