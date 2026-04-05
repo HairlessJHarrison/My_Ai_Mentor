@@ -20,7 +20,7 @@ class PersonalGoal(PersonalGoalBase, table=True):
     __tablename__ = "personal_goals"
 
     id: int | None = Field(default=None, primary_key=True)
-    created_at: dt.datetime = Field(default_factory=dt.datetime.utcnow)
+    created_at: dt.datetime = Field(default_factory=lambda: dt.datetime.now(dt.timezone.utc))
 
 
 class PersonalGoalCreate(SQLModel):
@@ -51,7 +51,7 @@ class GoalCompletion(SQLModel, table=True):
     duration_min: int | None = Field(default=None, description="Optional duration in minutes")
     notes: str | None = Field(default=None, description="Optional notes about the completion")
     points_earned: int = Field(default=0, description="Points earned (from goal config + any multipliers)")
-    created_at: dt.datetime = Field(default_factory=dt.datetime.utcnow)
+    created_at: dt.datetime = Field(default_factory=lambda: dt.datetime.now(dt.timezone.utc))
 
 
 class GoalCompleteRequest(SQLModel):

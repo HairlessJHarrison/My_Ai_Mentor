@@ -81,7 +81,7 @@ async def update_plan(
     update_data = body.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(meal, key, value)
-    meal.updated_at = dt.datetime.utcnow()
+    meal.updated_at = dt.datetime.now(dt.timezone.utc)
 
     session.add(meal)
     session.commit()

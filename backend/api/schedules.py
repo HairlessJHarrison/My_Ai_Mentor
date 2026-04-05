@@ -105,7 +105,7 @@ async def update_event(
     update_data = body.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(event, key, value)
-    event.updated_at = dt.datetime.utcnow()
+    event.updated_at = dt.datetime.now(dt.timezone.utc)
 
     session.add(event)
     session.commit()
@@ -127,7 +127,7 @@ async def protect_event(
         raise HTTPException(status_code=404, detail="Event not found")
 
     event.is_protected = body.get("is_protected", False)
-    event.updated_at = dt.datetime.utcnow()
+    event.updated_at = dt.datetime.now(dt.timezone.utc)
     session.add(event)
     session.commit()
     session.refresh(event)
@@ -228,7 +228,7 @@ async def auto_travel_time(
         raise HTTPException(status_code=400, detail=str(e))
 
     event.travel_time_min = result["duration_min"]
-    event.updated_at = dt.datetime.utcnow()
+    event.updated_at = dt.datetime.now(dt.timezone.utc)
     session.add(event)
     session.commit()
     session.refresh(event)

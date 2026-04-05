@@ -166,7 +166,7 @@ def sync_member_calendar(member: Member, session: Session) -> dict:
     updated = 0
 
     # --- Import from Google ---
-    now = dt.datetime.utcnow()
+    now = dt.datetime.now(dt.timezone.utc)
     time_min = (now - dt.timedelta(days=7)).isoformat() + "Z"
     time_max = (now + dt.timedelta(days=30)).isoformat() + "Z"
 
@@ -200,7 +200,7 @@ def sync_member_calendar(member: Member, session: Session) -> dict:
                         setattr(existing, field, new_val)
                         changed = True
                 if changed:
-                    existing.updated_at = dt.datetime.utcnow()
+                    existing.updated_at = dt.datetime.now(dt.timezone.utc)
                     session.add(existing)
                     updated += 1
             else:

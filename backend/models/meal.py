@@ -21,8 +21,8 @@ class MealPlan(MealPlanBase, table=True):
     __tablename__ = "meal_plans"
 
     id: int | None = Field(default=None, primary_key=True)
-    created_at: dt.datetime = Field(default_factory=dt.datetime.utcnow)
-    updated_at: dt.datetime = Field(default_factory=dt.datetime.utcnow)
+    created_at: dt.datetime = Field(default_factory=lambda: dt.datetime.now(dt.timezone.utc))
+    updated_at: dt.datetime = Field(default_factory=lambda: dt.datetime.now(dt.timezone.utc))
 
 
 class MealPlanCreate(MealPlanBase):

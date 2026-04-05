@@ -58,7 +58,7 @@ class TestGetStats:
         assert data["total_hours"] == 0
 
     def test_with_sessions(self, client, session):
-        now = dt.datetime.utcnow()
+        now = dt.datetime.now(dt.timezone.utc)
         make_presence(
             session,
             status="completed",

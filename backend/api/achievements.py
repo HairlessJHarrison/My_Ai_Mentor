@@ -138,7 +138,7 @@ async def claim_achievement(
         raise HTTPException(status_code=400, detail="Achievement not yet complete")
 
     achievement.is_claimed = True
-    achievement.claimed_at = dt.datetime.utcnow()
+    achievement.claimed_at = dt.datetime.now(dt.timezone.utc)
     session.add(achievement)
     session.commit()
     session.refresh(achievement)

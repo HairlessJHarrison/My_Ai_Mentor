@@ -20,7 +20,7 @@ class Transaction(TransactionBase, table=True):
     __tablename__ = "transactions"
 
     id: int | None = Field(default=None, primary_key=True)
-    created_at: dt.datetime = Field(default_factory=dt.datetime.utcnow)
+    created_at: dt.datetime = Field(default_factory=lambda: dt.datetime.now(dt.timezone.utc))
 
 
 class TransactionCreate(TransactionBase):

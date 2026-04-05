@@ -22,7 +22,7 @@ class Chore(ChoreBase, table=True):
     __tablename__ = "chores"
 
     id: int | None = Field(default=None, primary_key=True)
-    created_at: dt.datetime = Field(default_factory=dt.datetime.utcnow)
+    created_at: dt.datetime = Field(default_factory=lambda: dt.datetime.now(dt.timezone.utc))
 
 
 class ChoreCreate(SQLModel):
@@ -57,7 +57,7 @@ class ChoreCompletion(SQLModel, table=True):
     date: dt.date = Field(description="Date of completion", index=True)
     verified_by: int | None = Field(default=None, description="Parent member_id who verified (optional)")
     points_earned: int = Field(default=0, description="Points earned")
-    created_at: dt.datetime = Field(default_factory=dt.datetime.utcnow)
+    created_at: dt.datetime = Field(default_factory=lambda: dt.datetime.now(dt.timezone.utc))
 
 
 class ChoreCompleteRequest(SQLModel):

@@ -69,7 +69,7 @@ async def end_session(
         raise HTTPException(status_code=404, detail="No active unplugged session")
 
     # End the session
-    active.end_time = dt.datetime.utcnow()
+    active.end_time = dt.datetime.now(dt.timezone.utc)
     active.status = "completed"
     session.add(active)
 
@@ -131,7 +131,7 @@ async def get_stats(
     _auth: str = Depends(verify_api_key),
 ):
     """Unplugged session statistics."""
-    cutoff = dt.datetime.utcnow() - dt.timedelta(weeks=weeks)
+    cutoff = dt.datetime.now(dt.timezone.utc) - dt.timedelta(weeks=weeks)
 
     sessions = session.exec(
         select(PresenceSession).where(

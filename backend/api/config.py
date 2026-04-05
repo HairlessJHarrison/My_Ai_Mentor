@@ -63,7 +63,7 @@ async def update_household(
     update_data = body.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(config, key, value)
-    config.updated_at = dt.datetime.utcnow()
+    config.updated_at = dt.datetime.now(dt.timezone.utc)
 
     session.add(config)
     session.commit()

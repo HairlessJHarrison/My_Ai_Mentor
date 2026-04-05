@@ -103,7 +103,7 @@ async def toggle_complete(
         raise HTTPException(status_code=404, detail="To-do not found")
 
     todo.is_completed = not todo.is_completed
-    todo.completed_at = dt.datetime.utcnow() if todo.is_completed else None
+    todo.completed_at = dt.datetime.now(dt.timezone.utc) if todo.is_completed else None
 
     session.add(todo)
     session.commit()

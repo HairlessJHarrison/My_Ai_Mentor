@@ -21,7 +21,7 @@ class Activity(ActivityBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     points_earned: int = Field(default=0, description="Calculated points (server-side based on scoring rules)")
     multipliers_applied: list[str] = Field(default=[], sa_column=Column(JSON), description="List of multiplier names that were applied")
-    created_at: dt.datetime = Field(default_factory=dt.datetime.utcnow)
+    created_at: dt.datetime = Field(default_factory=lambda: dt.datetime.now(dt.timezone.utc))
 
 
 class ActivityCreate(SQLModel):
