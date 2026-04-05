@@ -57,11 +57,9 @@ def get_goal_progress(
             )
         ).all()
 
-        streak_days = _get_goal_streak_days(session, goal.id, member_id)
-        # Include today if completed today
         today_completed = any(c.date == today for c in completions)
-        if today_completed:
-            streak_days += 1
+        end_date = today if today_completed else today - dt.timedelta(days=1)
+        streak_days = _get_goal_streak_days(session, goal.id, member_id, end_date=end_date)
 
         points_total = sum(c.points_earned for c in completions)
 
@@ -75,13 +73,23 @@ def get_goal_progress(
     return result
 
 
-def _get_goal_streak_days(session: Session, goal_id: int, member_id: int) -> int:
-    """Count consecutive days with at least one completion, ending yesterday."""
-    today = dt.date.today()
+def _get_goal_streak_days(
+    session: Session,
+    goal_id: int,
+    member_id: int,
+    end_date: dt.date | None = None,
+) -> int:
+    """Count consecutive days with at least one completion, ending on end_date.
+
+    Defaults to yesterday so it can be called before today's completion is saved.
+    Pass end_date=today to include today when the completion is already in the DB.
+    """
+    if end_date is None:
+        end_date = dt.date.today() - dt.timedelta(days=1)
     streak = 0
 
-    for offset in range(1, 366):
-        check_date = today - dt.timedelta(days=offset)
+    for offset in range(0, 366):
+        check_date = end_date - dt.timedelta(days=offset)
         count = len(session.exec(
             select(GoalCompletion).where(
                 GoalCompletion.goal_id == goal_id,
