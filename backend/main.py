@@ -33,6 +33,7 @@ from api.google_calendar import router as google_calendar_router
 from api.ai_context import router as ai_context_router
 from api.todos import router as todos_router
 from api.achievements import router as achievements_router
+from api.dashboard import router as dashboard_router
 
 START_TIME = time.time()
 
@@ -143,6 +144,7 @@ app.include_router(google_calendar_router)
 app.include_router(ai_context_router)
 app.include_router(todos_router)
 app.include_router(achievements_router)
+app.include_router(dashboard_router)
 
 
 @app.get("/api/v1/health")

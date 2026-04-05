@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { HouseholdProvider } from './context/HouseholdContext';
 import Dashboard from './components/Dashboard';
+import DashboardView from './views/DashboardView';
 import UnpluggedMode from './components/UnpluggedMode';
 import ScheduleView from './views/ScheduleView';
 import MealsView from './views/MealsView';
@@ -20,7 +21,8 @@ export default function App() {
       <HouseholdProvider>
         <UnpluggedMode />
         <Routes>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<DashboardView />} />
+          <Route path="/hub" element={<Dashboard />} />
           <Route path="/schedule" element={<ScheduleView />} />
           <Route path="/meals" element={<MealsView />} />
           <Route path="/budget" element={<BudgetView />} />
