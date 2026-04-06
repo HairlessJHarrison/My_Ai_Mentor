@@ -69,6 +69,19 @@ def migrate_achievement_renewal_columns():
     conn.close()
 
 
+def migrate_kiosk_settings():
+    """Create kiosk_settings table if it doesn't exist (handled by SQLModel, but guards against old DBs)."""
+    if DATABASE_URL in ("sqlite://", "sqlite:///"):
+        return
+    db_path = DATABASE_URL.replace("sqlite:///", "")
+    if not db_path or db_path == DATABASE_URL:
+        return
+    conn = sqlite3.connect(db_path)
+    # Table creation is handled by SQLModel; this is a no-op guard for future column additions.
+    conn.commit()
+    conn.close()
+
+
 def get_session():
     with Session(engine) as session:
         yield session
