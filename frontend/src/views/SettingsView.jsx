@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHousehold } from '../context/HouseholdContext';
-import { get, post, del } from '../hooks/useApi';
+import { get, post, put, del } from '../hooks/useApi';
 
 export default function SettingsView() {
     const navigate = useNavigate();
@@ -46,6 +46,51 @@ export default function SettingsView() {
             setError(e.message);
         }
     }, [refresh]);
+
+    // ── Reminder config state ──────────────────────────────────────────────────
+    const [reminderConfigs, setReminderConfigs] = useState({});   // keyed by member_id or 'global'
+    const [reminderSaving, setReminderSaving] = useState({});
+    const [reminderSaved, setReminderSaved] = useState({});
+
+    useEffect(() => {
+        get('/notifications/reminder-config').then(configs => {
+            const map = {};
+            configs.forEach(c => {
+                map[c.member_id ?? 'global'] = { hour: c.reminder_hour, minute: c.reminder_minute, enabled: c.enabled };
+            });
+            setReminderConfigs(map);
+        }).catch(() => { });
+    }, []);
+
+    const getReminderFor = (key) => reminderConfigs[key] ?? { hour: 18, minute: 0, enabled: true };
+
+    const saveReminder = useCallback(async (memberId) => {
+        const key = memberId ?? 'global';
+        const cfg = getReminderFor(key);
+        setReminderSaving(s => ({ ...s, [key]: true }));
+        try {
+            const qs = memberId != null ? `?member_id=${memberId}` : '';
+            await put(`/notifications/reminder-config${qs}`, {
+                reminder_hour: cfg.hour,
+                reminder_minute: cfg.minute,
+                enabled: cfg.enabled,
+            });
+            setReminderSaved(s => ({ ...s, [key]: true }));
+            setTimeout(() => setReminderSaved(s => ({ ...s, [key]: false })), 2000);
+        } catch {
+            // silently fail — user can retry
+        } finally {
+            setReminderSaving(s => ({ ...s, [key]: false }));
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [reminderConfigs]);
+
+    const updateReminder = (key, patch) => {
+        setReminderConfigs(prev => ({
+            ...prev,
+            [key]: { ...getReminderFor(key), ...patch },
+        }));
+    };
 
     const syncAll = useCallback(async () => {
         setSyncing(true);
@@ -220,6 +265,125 @@ export default function SettingsView() {
                     </div>
                 )}
             </section>
+
+            {/* Reminder Notifications Section */}
+            <section className="bg-surface-800/60 rounded-2xl border border-surface-700/50 p-6 mb-6">
+                <div className="mb-6">
+                    <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
+                        <svg className="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round"
+                                d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                        </svg>
+                        Daily Goal Reminders
+                    </h2>
+                    <p className="text-surface-400 text-sm mt-1">
+                        Get an in-app nudge if daily goals haven't been completed by the configured time.
+                    </p>
+                </div>
+
+                <div className="space-y-3">
+                    {/* Global default row */}
+                    <ReminderRow
+                        label="Global default"
+                        sublabel="Applies to members without a personal override"
+                        cfg={getReminderFor('global')}
+                        saving={!!reminderSaving['global']}
+                        saved={!!reminderSaved['global']}
+                        onChange={(patch) => updateReminder('global', patch)}
+                        onSave={() => saveReminder(null)}
+                    />
+
+                    {/* Per-member rows */}
+                    {members.map(m => (
+                        <ReminderRow
+                            key={m.id}
+                            label={m.name}
+                            sublabel={`Override for ${m.name}`}
+                            avatar={m.avatar}
+                            cfg={getReminderFor(m.id)}
+                            saving={!!reminderSaving[m.id]}
+                            saved={!!reminderSaved[m.id]}
+                            onChange={(patch) => updateReminder(m.id, patch)}
+                            onSave={() => saveReminder(m.id)}
+                        />
+                    ))}
+                </div>
+            </section>
+        </div>
+    );
+}
+
+function ReminderRow({ label, sublabel, avatar, cfg, saving, saved, onChange, onSave }) {
+    const hours = Array.from({ length: 24 }, (_, i) => i);
+    const minutes = [0, 15, 30, 45];
+
+    const fmt12 = (h) => {
+        const period = h < 12 ? 'AM' : 'PM';
+        const display = h % 12 === 0 ? 12 : h % 12;
+        return `${display} ${period}`;
+    };
+
+    return (
+        <div className="flex flex-wrap items-center gap-3 p-4 bg-surface-700/50 rounded-xl border border-surface-600/50">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+                {avatar && <span className="text-xl shrink-0">{avatar}</span>}
+                <div className="min-w-0">
+                    <p className="text-surface-100 font-medium text-sm truncate">{label}</p>
+                    <p className="text-surface-500 text-xs truncate">{sublabel}</p>
+                </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+                {/* Enabled toggle */}
+                <button
+                    onClick={() => onChange({ enabled: !cfg.enabled })}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                        ${cfg.enabled ? 'bg-forest-600' : 'bg-surface-600'}`}
+                    title={cfg.enabled ? 'Disable reminders' : 'Enable reminders'}
+                >
+                    <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform
+                        ${cfg.enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+
+                {/* Hour select */}
+                <select
+                    value={cfg.hour}
+                    disabled={!cfg.enabled}
+                    onChange={e => onChange({ hour: parseInt(e.target.value) })}
+                    className="bg-surface-600 border border-surface-500 text-surface-200 rounded-lg px-2 py-1.5 text-sm
+                        disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:border-ocean-500"
+                >
+                    {hours.map(h => (
+                        <option key={h} value={h}>{fmt12(h)}</option>
+                    ))}
+                </select>
+
+                {/* Minute select */}
+                <select
+                    value={cfg.minute}
+                    disabled={!cfg.enabled}
+                    onChange={e => onChange({ minute: parseInt(e.target.value) })}
+                    className="bg-surface-600 border border-surface-500 text-surface-200 rounded-lg px-2 py-1.5 text-sm
+                        disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:border-ocean-500"
+                >
+                    {minutes.map(m => (
+                        <option key={m} value={m}>:{String(m).padStart(2, '0')}</option>
+                    ))}
+                </select>
+
+                {/* Save button */}
+                <button
+                    onClick={onSave}
+                    disabled={saving}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[36px]
+                        ${saved
+                            ? 'bg-forest-600/20 text-forest-400 border border-forest-600/30'
+                            : 'bg-ocean-600/20 border border-ocean-600/30 text-ocean-300 hover:bg-ocean-600/30'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                    {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save'}
+                </button>
+            </div>
         </div>
     );
 }

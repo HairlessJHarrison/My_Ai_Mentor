@@ -13,6 +13,7 @@ import OnboardingWizard from './OnboardingWizard';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
 import SortableCardWrapper from './SortableCardWrapper';
+import NotificationBell from './NotificationBell';
 
 export default function Dashboard() {
     const navigate = useNavigate();
@@ -108,6 +109,7 @@ export default function Dashboard() {
                             className="px-4 py-2.5 bg-ocean-600/20 border border-ocean-600/30 text-ocean-300 hover:bg-ocean-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
                             📆 Calendar
                         </button>
+                        <NotificationBell />
                         <button onClick={() => navigate('/settings')}
                             className="p-2.5 bg-surface-700/50 border border-surface-600/50 text-surface-400 hover:text-surface-200 hover:bg-surface-700 rounded-xl transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-[0.97]"
                             title="Settings">
