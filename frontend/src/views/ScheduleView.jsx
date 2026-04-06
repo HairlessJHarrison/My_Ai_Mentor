@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { get, post, put, del } from '../hooks/useApi';
+import { AnimatePresence } from 'framer-motion';
+import MemberCard from '../components/MemberCard';
 
 const emptyForm = () => ({
     title: '', date: new Date().toISOString().slice(0, 10),
@@ -175,48 +177,58 @@ export default function ScheduleView() {
             {loading ? (
                 <div className="text-center py-12 text-surface-400">Loading schedule...</div>
             ) : (
-                <div className="space-y-3">
-                    {data.events.length === 0 ? (
-                        <div className="text-center py-12 text-surface-400">No events this week. Add one above!</div>
-                    ) : (
-                        data.events.map((event) => (
-                            <div key={event.id}
-                                onClick={() => openEditForm(event)}
-                                className={`flex items-center gap-4 px-5 py-4 rounded-xl transition-colors cursor-pointer
-                                    ${editingId === event.id ? 'ring-2 ring-forest-500' : ''}
-                                    ${event.is_protected
-                                        ? 'bg-forest-900/30 border border-forest-700/30 hover:bg-forest-900/40'
-                                        : 'bg-surface-800 hover:bg-surface-750'}`}>
-                                <span className="text-xl">{typeEmoji[event.event_type] || '📌'}</span>
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-surface-100 truncate">{event.title}</p>
-                                    <p className="text-sm text-surface-400">
-                                        {event.date} · {event.start_time?.slice(0, 5)} – {event.end_time?.slice(0, 5)}
-                                        <span className="ml-2 capitalize">{event.event_type.replace(/_/g, ' ')}</span>
-                                    </p>
-                                    {(event.location || event.travel_time_min) && (
-                                        <p className="text-sm text-surface-500 mt-0.5">
-                                            {event.location && <><span className="text-forest-400">📍</span> {event.location}</>}
-                                            {event.travel_time_min && <span className="ml-2 text-amber-400/70">~{event.travel_time_min}m drive</span>}
-                                        </p>
-                                    )}
-                                </div>
-                                {/* Member color dots */}
-                                {event.assigned_member_ids?.length > 0 && (
-                                    <div className="flex gap-1 shrink-0">
-                                        {event.assigned_member_ids.map(id => {
-                                            const m = members.find(mem => mem.id === id);
-                                            return m ? <span key={id} className="w-3 h-3 rounded-full" style={{ backgroundColor: m.color }} title={m.name} /> : null;
-                                        })}
-                                    </div>
-                                )}
-                                {event.is_protected && <span className="text-forest-400 text-xs font-medium">Protected</span>}
-                                <button onClick={(e) => { e.stopPropagation(); deleteEvent(event.id); }}
-                                    className="text-surface-500 hover:text-rose-400 transition-colors text-sm w-11 h-11 flex items-center justify-center rounded-xl hover:bg-surface-700/50 active:scale-[0.95]">✕</button>
-                            </div>
-                        ))
-                    )}
-                </div>
+                <AnimatePresence initial={false}>
+                    <div className="space-y-3">
+                        {data.events.length === 0 ? (
+                            <div className="text-center py-12 text-surface-400">No events this week. Add one above!</div>
+                        ) : (
+                            data.events.map((event, index) => {
+                                const firstMember = event.assigned_member_ids?.length > 0
+                                    ? members.find(m => m.id === event.assigned_member_ids[0])
+                                    : null;
+                                const borderColor = firstMember?.color || (event.is_protected ? 'var(--color-forest-600)' : undefined);
+                                return (
+                                    <MemberCard
+                                        key={event.id}
+                                        color={borderColor}
+                                        onClick={() => openEditForm(event)}
+                                        style={{ transitionDelay: `${index * 0.04}s` }}
+                                        className={editingId === event.id ? 'ring-2 ring-forest-500' : ''}
+                                    >
+                                        <div className="flex items-center gap-4 px-4 py-4">
+                                            <span className="text-xl">{typeEmoji[event.event_type] || '📌'}</span>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-medium text-surface-100 truncate">{event.title}</p>
+                                                <p className="text-sm text-surface-400">
+                                                    {event.date} · {event.start_time?.slice(0, 5)} – {event.end_time?.slice(0, 5)}
+                                                    <span className="ml-2 capitalize">{event.event_type.replace(/_/g, ' ')}</span>
+                                                </p>
+                                                {(event.location || event.travel_time_min) && (
+                                                    <p className="text-sm text-surface-500 mt-0.5">
+                                                        {event.location && <><span className="text-forest-400">📍</span> {event.location}</>}
+                                                        {event.travel_time_min && <span className="ml-2 text-amber-400/70">~{event.travel_time_min}m drive</span>}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            {/* Member color dots */}
+                                            {event.assigned_member_ids?.length > 0 && (
+                                                <div className="flex gap-1 shrink-0">
+                                                    {event.assigned_member_ids.map(id => {
+                                                        const m = members.find(mem => mem.id === id);
+                                                        return m ? <span key={id} className="w-3 h-3 rounded-full" style={{ backgroundColor: m.color }} title={m.name} /> : null;
+                                                    })}
+                                                </div>
+                                            )}
+                                            {event.is_protected && <span className="text-forest-400 text-xs font-medium">Protected</span>}
+                                            <button onClick={(e) => { e.stopPropagation(); deleteEvent(event.id); }}
+                                                className="text-surface-500 hover:text-rose-400 transition-colors text-sm w-11 h-11 flex items-center justify-center rounded-xl hover:bg-surface-700/50 active:scale-[0.95]">✕</button>
+                                        </div>
+                                    </MemberCard>
+                                );
+                            })
+                        )}
+                    </div>
+                </AnimatePresence>
             )}
 
             {/* Free blocks */}

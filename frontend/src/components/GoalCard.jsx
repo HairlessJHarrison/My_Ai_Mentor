@@ -2,7 +2,7 @@ import { useHousehold } from '../context/HouseholdContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function GoalCard() {
-    const { goals } = useHousehold();
+    const { goals, members } = useHousehold();
     const navigate = useNavigate();
 
     const activeGoals = (goals || []).filter(g => g.is_active);
@@ -61,14 +61,21 @@ export default function GoalCard() {
 
             {activeGoals.length > 0 && (
                 <div className="space-y-1.5">
-                    {activeGoals.slice(0, 3).map((goal, i) => (
-                        <div key={goal.id || i} className="flex justify-between text-sm px-3 py-2.5 bg-surface-700/40 rounded-lg">
-                            <span className="text-surface-300">
-                                {catEmoji[goal.category] || '⭐'} {goal.title}
-                            </span>
-                            <span className="text-amber-400">+{goal.points_per_completion} pts</span>
-                        </div>
-                    ))}
+                    {activeGoals.slice(0, 3).map((goal, i) => {
+                        const member = members.find(m => m.id === goal.member_id);
+                        const borderColor = member?.color || '#313b48';
+                        return (
+                            <div key={goal.id || i} className="flex overflow-hidden rounded-lg text-sm bg-surface-700/40">
+                                <div className="w-[4px] shrink-0 rounded-l-lg" style={{ backgroundColor: borderColor }} />
+                                <div className="flex items-center justify-between px-3 py-2.5 flex-1 min-w-0">
+                                    <span className="text-surface-300 truncate">
+                                        {catEmoji[goal.category] || '⭐'} {goal.title}
+                                    </span>
+                                    <span className="text-amber-400 ml-2 shrink-0">+{goal.points_per_completion} pts</span>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             )}
         </div>

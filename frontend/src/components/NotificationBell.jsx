@@ -8,6 +8,12 @@ const TYPE_ICONS = {
     info: 'ℹ️',
 };
 
+const TYPE_COLORS = {
+    goal_reminder: '#2a8c56',  // forest-600
+    achievement: '#f59e0b',    // amber-500
+    info: '#1a7ef5',           // ocean-500
+};
+
 function timeAgo(dateStr) {
     const diff = Date.now() - new Date(dateStr + 'Z').getTime();
     const mins = Math.floor(diff / 60000);
@@ -102,41 +108,48 @@ export default function NotificationBell() {
                                 <p className="text-surface-500 text-sm">No notifications</p>
                             </div>
                         ) : (
-                            <ul className="divide-y divide-surface-700/40">
-                                {notifications.map(n => (
-                                    <li
-                                        key={n.id}
-                                        onClick={() => !n.read && handleMarkRead(n.id)}
-                                        className={`flex items-start gap-3 px-4 py-3 transition-colors group
-                                            ${n.read
-                                                ? 'opacity-60'
-                                                : 'cursor-pointer hover:bg-surface-700/40 bg-surface-700/20'
-                                            }`}
-                                    >
-                                        <span className="text-lg mt-0.5 shrink-0">
-                                            {TYPE_ICONS[n.type] || '🔔'}
-                                        </span>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm text-surface-200 leading-snug">{n.message}</p>
-                                            <p className="text-xs text-surface-500 mt-1">{timeAgo(n.created_at)}</p>
-                                        </div>
-                                        <div className="flex items-center gap-1 shrink-0 self-center">
-                                            {!n.read && (
-                                                <span className="w-2 h-2 rounded-full bg-ocean-400 shrink-0" />
-                                            )}
-                                            <button
-                                                onClick={(e) => handleDelete(e, n.id)}
-                                                className="opacity-0 group-hover:opacity-100 p-1 text-surface-500
-                                                    hover:text-rose-400 rounded transition-all"
-                                                title="Dismiss"
-                                            >
-                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </li>
-                                ))}
+                            <ul className="flex flex-col gap-2 p-2">
+                                {notifications.map(n => {
+                                    const borderColor = TYPE_COLORS[n.type] || '#4a5568';
+                                    return (
+                                        <li
+                                            key={n.id}
+                                            onClick={() => !n.read && handleMarkRead(n.id)}
+                                            className={`flex overflow-hidden rounded-lg shadow-sm transition-colors group
+                                                ${n.read
+                                                    ? 'opacity-60'
+                                                    : 'cursor-pointer bg-surface-700/30 hover:bg-surface-700/50'
+                                                }`}
+                                        >
+                                            {/* Left color border */}
+                                            <div className="w-[4px] shrink-0 rounded-l-lg" style={{ backgroundColor: borderColor }} />
+                                            <div className="flex items-start gap-3 px-3 py-2.5 flex-1 min-w-0">
+                                                <span className="text-base mt-0.5 shrink-0">
+                                                    {TYPE_ICONS[n.type] || '🔔'}
+                                                </span>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm text-surface-200 leading-snug">{n.message}</p>
+                                                    <p className="text-xs text-surface-500 mt-0.5">{timeAgo(n.created_at)}</p>
+                                                </div>
+                                                <div className="flex items-center gap-1 shrink-0 self-center">
+                                                    {!n.read && (
+                                                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: borderColor }} />
+                                                    )}
+                                                    <button
+                                                        onClick={(e) => handleDelete(e, n.id)}
+                                                        className="opacity-0 group-hover:opacity-100 p-1 text-surface-500
+                                                            hover:text-rose-400 rounded transition-all"
+                                                        title="Dismiss"
+                                                    >
+                                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         )}
                     </div>
