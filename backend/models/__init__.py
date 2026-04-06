@@ -11,6 +11,7 @@ from .chore import Chore, ChoreCreate, ChoreUpdate, ChoreCompletion, ChoreComple
 from .csv_mapping import CsvColumnMapping, CsvColumnMappingCreate
 from .todo import TodoItem, TodoItemCreate, TodoItemUpdate
 from .achievement import Achievement, AchievementCreate, AchievementUpdate
+from .notification import Notification, NotificationCreate, ReminderConfig, ReminderConfigUpdate
 
 __all__ = [
     "ScheduleEvent", "ScheduleEventCreate", "ScheduleEventUpdate",
@@ -28,4 +29,5 @@ __all__ = [
     "CsvColumnMapping", "CsvColumnMappingCreate",
     "TodoItem", "TodoItemCreate", "TodoItemUpdate",
     "Achievement", "AchievementCreate", "AchievementUpdate",
+    "Notification", "NotificationCreate", "ReminderConfig", "ReminderConfigUpdate",
 ]

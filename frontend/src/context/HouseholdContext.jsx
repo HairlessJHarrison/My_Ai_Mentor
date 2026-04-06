@@ -16,11 +16,12 @@ export function HouseholdProvider({ children }) {
     const [chores, setChores] = useState({ members: [] });
     const [todos, setTodos] = useState([]);
     const [achievements, setAchievements] = useState([]);
+    const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const refresh = useCallback(async () => {
         try {
-            const [sched, meal, budg, score, pres, conf, mem, gls, chs, tds, achs] = await Promise.all([
+            const [sched, meal, budg, score, pres, conf, mem, gls, chs, tds, achs, notifs] = await Promise.all([
                 get('/schedules/today'),
                 get('/meals/plan?week=current'),
                 get('/budgets/summary?month=current'),
@@ -32,6 +33,7 @@ export function HouseholdProvider({ children }) {
                 get('/chores/status'),
                 get('/todos'),
                 get('/achievements'),
+                get('/notifications?limit=50'),
             ]);
             setSchedule(sched);
             setMeals(meal);
@@ -44,6 +46,7 @@ export function HouseholdProvider({ children }) {
             setChores(chs);
             setTodos(tds);
             setAchievements(achs);
+            setNotifications(notifs);
         } catch (e) {
             console.error('Failed to load data:', e);
         } finally {
@@ -52,6 +55,19 @@ export function HouseholdProvider({ children }) {
     }, []);
 
     useEffect(() => { refresh(); }, [refresh]);
+
+    // Notification helpers exposed to components (avoid redundant API round-trips)
+    const markNotificationRead = useCallback((id) => {
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    }, []);
+
+    const markAllNotificationsRead = useCallback(() => {
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    }, []);
+
+    const removeNotification = useCallback((id) => {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+    }, []);
 
     const handleWsEvent = useCallback((event, data) => {
         switch (event) {
@@ -96,6 +112,10 @@ export function HouseholdProvider({ children }) {
             case 'todo_updated':
                 get('/todos').then(setTodos).catch(() => { });
                 break;
+            case 'notification_created':
+                // Prepend the new notification so it appears at the top
+                setNotifications(prev => [data, ...prev]);
+                break;
         }
     }, [refresh]);
 
@@ -105,6 +125,7 @@ export function HouseholdProvider({ children }) {
         <HouseholdContext.Provider value={{
             schedule, meals, budget, scoring, presence, config,
             members, goals, chores, todos, achievements,
+            notifications, markNotificationRead, markAllNotificationsRead, removeNotification,
             loading, connected, refresh, setPresence,
         }}>
             {children}
