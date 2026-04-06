@@ -63,3 +63,30 @@ class GoalCompleteRequest(SQLModel):
     date: dt.date | None = Field(default=None, description="Completion date (defaults to today; use to log past completions)")
     duration_min: int | None = Field(default=None, description="Optional duration in minutes")
     notes: str | None = Field(default=None, description="Optional notes")
+
+
+class GoalMilestone(SQLModel, table=True):
+    __tablename__ = "goal_milestones"
+
+    id: int | None = Field(default=None, primary_key=True)
+    household_id: str = Field(description="Household identifier")
+    goal_id: int = Field(description="Which goal this milestone belongs to", index=True)
+    title: str = Field(description="Milestone title")
+    completed: bool = Field(default=False, description="Whether this milestone has been completed")
+    order: int = Field(default=0, description="Display order within the goal")
+    points_reward: int = Field(default=0, description="Points awarded on completion (0 = auto-split from goal)")
+    created_at: dt.datetime = Field(default_factory=dt.datetime.utcnow)
+    completed_at: dt.datetime | None = Field(default=None, description="When this milestone was completed")
+
+
+class GoalMilestoneCreate(SQLModel):
+    title: str = Field(description="Milestone title")
+    order: int = Field(default=0, description="Display order")
+    points_reward: int = Field(default=0, description="Points reward (0 = auto-split from goal)")
+
+
+class GoalMilestoneUpdate(SQLModel):
+    title: str | None = None
+    completed: bool | None = None
+    order: int | None = None
+    points_reward: int | None = None

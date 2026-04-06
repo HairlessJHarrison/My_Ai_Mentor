@@ -47,6 +47,27 @@ def migrate_chore_schedule_columns():
     conn.close()
 
 
+def migrate_achievement_renewal_columns():
+    """Add renewable/renewal columns to achievements table if they don't exist."""
+    if DATABASE_URL in ("sqlite://", "sqlite:///"):
+        return
+    db_path = DATABASE_URL.replace("sqlite:///", "")
+    if not db_path or db_path == DATABASE_URL:
+        return
+    conn = sqlite3.connect(db_path)
+    for col, col_type, default in [
+        ("renewable", "BOOLEAN", "0"),
+        ("renewal_period", "TEXT", "NULL"),
+        ("claim_count", "INTEGER", "0"),
+    ]:
+        try:
+            conn.execute(f"ALTER TABLE achievements ADD COLUMN {col} {col_type} DEFAULT {default}")
+        except sqlite3.OperationalError:
+            pass  # column already exists
+    conn.commit()
+    conn.close()
+
+
 def get_session():
     with Session(engine) as session:
         yield session

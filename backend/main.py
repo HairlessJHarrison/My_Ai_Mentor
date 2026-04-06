@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
-from database import create_db_and_tables, get_session, migrate_chore_schedule_columns
+from database import create_db_and_tables, get_session, migrate_chore_schedule_columns, migrate_achievement_renewal_columns
 from websocket import manager
 
 logger = logging.getLogger("unplugged.autosync")
@@ -177,6 +177,7 @@ scheduler = AsyncIOScheduler()
 async def lifespan(app: FastAPI):
     create_db_and_tables()
     migrate_chore_schedule_columns()
+    migrate_achievement_renewal_columns()
     scheduler.add_job(_auto_sync_all, "interval", minutes=60, id="google_calendar_sync")
     scheduler.add_job(_check_daily_goal_reminders, "interval", minutes=5, id="goal_reminders")
     scheduler.start()

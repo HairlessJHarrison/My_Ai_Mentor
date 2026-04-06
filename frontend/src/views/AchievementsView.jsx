@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Confetti from 'react-confetti';
 import PointsHistoryChart from '../components/PointsHistoryChart';
 
+const RENEWAL_LABELS = { weekly: 'Weekly', monthly: 'Monthly', quarterly: 'Quarterly' };
+
 export default function AchievementsView() {
     const navigate = useNavigate();
     const { config } = useHousehold();
@@ -18,6 +20,8 @@ export default function AchievementsView() {
     const [expandedId, setExpandedId] = useState(null);
     const [logData, setLogData] = useState(null);
     const [logLoading, setLogLoading] = useState(false);
+    const [claimsData, setClaimsData] = useState(null);
+    const [claimsLoading, setClaimsLoading] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
     const [pinEntryMode, setPinEntryMode] = useState(false);
@@ -26,6 +30,7 @@ export default function AchievementsView() {
     const [pendingClaimId, setPendingClaimId] = useState(null);
     const [form, setForm] = useState({
         prize_name: '', target_points: 100, prize_image_url: '',
+        renewable: false, renewal_period: '',
     });
 
     const prefs = config?.preferences || {};
@@ -55,7 +60,7 @@ export default function AchievementsView() {
 
     const openNewForm = () => {
         setEditingId(null);
-        setForm({ prize_name: '', target_points: 100, prize_image_url: '' });
+        setForm({ prize_name: '', target_points: 100, prize_image_url: '', renewable: false, renewal_period: '' });
         setShowForm(true);
     };
 
@@ -65,6 +70,8 @@ export default function AchievementsView() {
             prize_name: ach.prize_name,
             target_points: ach.target_points,
             prize_image_url: ach.prize_image_url || '',
+            renewable: ach.renewable || false,
+            renewal_period: ach.renewal_period || '',
         });
         setShowForm(true);
     };
@@ -72,19 +79,20 @@ export default function AchievementsView() {
     const submitForm = async (e) => {
         e.preventDefault();
         try {
+            const payload = {
+                prize_name: form.prize_name,
+                target_points: parseInt(form.target_points),
+                prize_image_url: form.prize_image_url || null,
+                renewable: form.renewable,
+                renewal_period: form.renewable && form.renewal_period ? form.renewal_period : null,
+            };
             if (editingId) {
-                await put(`/achievements/${editingId}`, {
-                    prize_name: form.prize_name,
-                    target_points: parseInt(form.target_points),
-                    prize_image_url: form.prize_image_url || null,
-                });
+                await put(`/achievements/${editingId}`, payload);
             } else {
                 await post('/achievements', {
                     household_id: 'default',
                     member_id: selectedMember,
-                    prize_name: form.prize_name,
-                    target_points: parseInt(form.target_points),
-                    prize_image_url: form.prize_image_url || null,
+                    ...payload,
                 });
             }
             await refreshAchievements();
@@ -127,6 +135,11 @@ export default function AchievementsView() {
             setShowConfetti(true);
             setTimeout(() => setShowConfetti(false), 5000);
             await refreshAchievements();
+            // Refresh claims panel if open
+            if (expandedId === id && claimsData) {
+                const c = await get(`/achievements/${id}/claims`);
+                setClaimsData(c);
+            }
         } catch (err) { alert(err.message); }
     };
 
@@ -134,15 +147,27 @@ export default function AchievementsView() {
         if (expandedId === id) {
             setExpandedId(null);
             setLogData(null);
+            setClaimsData(null);
             return;
         }
         setExpandedId(id);
+        setLogData(null);
+        setClaimsData(null);
         setLogLoading(true);
         try {
             const data = await get(`/achievements/${id}/progress`);
             setLogData(data);
         } catch (err) { console.error(err); }
         finally { setLogLoading(false); }
+    };
+
+    const loadClaimHistory = async (id) => {
+        setClaimsLoading(true);
+        try {
+            const data = await get(`/achievements/${id}/claims`);
+            setClaimsData(data);
+        } catch (err) { console.error(err); }
+        finally { setClaimsLoading(false); }
     };
 
     const activeAchievements = achievements.filter(a => a.is_active && !a.is_claimed);
@@ -211,6 +236,35 @@ export default function AchievementsView() {
                                     className="w-full bg-surface-700 text-surface-100 rounded-xl px-4 py-3 text-sm outline-none" />
                             </div>
                         </div>
+
+                        {/* Renewable toggle */}
+                        <div className="flex items-center gap-4 pt-1">
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <div
+                                    onClick={() => setForm(f => ({ ...f, renewable: !f.renewable }))}
+                                    className={`relative w-10 h-6 rounded-full transition-colors ${form.renewable ? 'bg-forest-600' : 'bg-surface-600'}`}
+                                >
+                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.renewable ? 'translate-x-5' : 'translate-x-1'}`} />
+                                </div>
+                                <span className="text-sm text-surface-300">Renewable</span>
+                            </label>
+                            {form.renewable && (
+                                <select
+                                    value={form.renewal_period}
+                                    onChange={e => setForm(f => ({ ...f, renewal_period: e.target.value }))}
+                                    className="bg-surface-700 text-surface-100 rounded-xl px-3 py-2 text-sm outline-none"
+                                >
+                                    <option value="">No period</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="monthly">Monthly</option>
+                                    <option value="quarterly">Quarterly</option>
+                                </select>
+                            )}
+                            {form.renewable && (
+                                <p className="text-xs text-surface-500">Resets progress after each claim so it can be earned again.</p>
+                            )}
+                        </div>
+
                         <div className="flex gap-3 justify-end">
                             <button type="button" onClick={() => { setShowForm(false); setEditingId(null); }}
                                 className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[44px] active:scale-[0.97]">Cancel</button>
@@ -275,7 +329,19 @@ export default function AchievementsView() {
 
                                         {/* Info */}
                                         <div className="flex-1 min-w-0">
-                                            <h3 className="text-surface-100 font-semibold text-lg truncate">{ach.prize_name}</h3>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <h3 className="text-surface-100 font-semibold text-lg truncate">{ach.prize_name}</h3>
+                                                {ach.renewable && (
+                                                    <span className="shrink-0 text-[10px] px-1.5 py-0.5 bg-forest-600/20 text-forest-400 rounded-md font-medium">
+                                                        🔄 {ach.renewal_period ? RENEWAL_LABELS[ach.renewal_period] : 'Renewable'}
+                                                    </span>
+                                                )}
+                                                {ach.claim_count > 0 && (
+                                                    <span className="shrink-0 text-[10px] px-1.5 py-0.5 bg-amber-500/10 text-amber-400 rounded-md font-medium">
+                                                        ×{ach.claim_count} claimed
+                                                    </span>
+                                                )}
+                                            </div>
                                             <p className="text-sm text-surface-400 mt-0.5">
                                                 {percent >= 100 ? 'Goal reached!' : `${ach.target_points - pointsEarned} pts to go`}
                                             </p>
@@ -294,14 +360,28 @@ export default function AchievementsView() {
                                             {percent >= 100 ? (
                                                 <button onClick={() => startClaim(ach.id)}
                                                     className="px-4 py-2 bg-amber-500/20 text-amber-400 rounded-xl text-xs font-semibold hover:bg-amber-500/30 transition-colors min-h-[44px] active:scale-[0.97]">
-                                                    Claim
+                                                    {ach.renewable ? '🔄 Claim & Reset' : 'Claim'}
                                                 </button>
                                             ) : null}
                                             <div className="flex gap-1.5">
                                                 <button onClick={() => toggleLog(ach.id)} title="View log"
-                                                    className="p-2 text-surface-400 hover:text-surface-200 transition-colors rounded-lg active:scale-[0.97]">
+                                                    className={`p-2 transition-colors rounded-lg active:scale-[0.97] ${isExpanded ? 'text-surface-200' : 'text-surface-400 hover:text-surface-200'}`}>
                                                     📋
                                                 </button>
+                                                {ach.renewable && (
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (expandedId !== ach.id) {
+                                                                setExpandedId(ach.id);
+                                                                setLogData(null);
+                                                            }
+                                                            await loadClaimHistory(ach.id);
+                                                        }}
+                                                        title="Claim history"
+                                                        className="p-2 text-surface-400 hover:text-surface-200 transition-colors rounded-lg active:scale-[0.97]">
+                                                        🕐
+                                                    </button>
+                                                )}
                                                 <button onClick={() => openEditForm(ach)} title="Edit"
                                                     className="p-2 text-surface-400 hover:text-surface-200 transition-colors rounded-lg active:scale-[0.97]">
                                                     ✏️
@@ -315,7 +395,7 @@ export default function AchievementsView() {
                                     </div>
                                 </div>
 
-                                {/* Expanded log */}
+                                {/* Expanded panel: point log or claim history */}
                                 <AnimatePresence>
                                     {isExpanded && (
                                         <motion.div
@@ -323,26 +403,60 @@ export default function AchievementsView() {
                                             className="border-t border-surface-700 overflow-hidden"
                                         >
                                             <div className="p-5 max-h-64 overflow-y-auto">
-                                                <h4 className="text-sm font-semibold text-surface-200 mb-3">Point History</h4>
-                                                {logLoading ? (
-                                                    <p className="text-xs text-surface-500">Loading...</p>
-                                                ) : logData?.log?.length === 0 ? (
-                                                    <p className="text-xs text-surface-500">No points earned yet. Complete chores and goals!</p>
-                                                ) : (
-                                                    <div className="space-y-2">
-                                                        {logData?.log?.map((entry, i) => (
-                                                            <div key={`${entry.type}-${entry.id}`} className="flex items-center justify-between p-2.5 bg-surface-700/40 rounded-xl text-sm">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-xs">{entry.type === 'chore' ? '🧹' : '🎯'}</span>
-                                                                    <div>
-                                                                        <p className="text-surface-300 capitalize text-xs font-medium">{entry.type} completion</p>
-                                                                        <p className="text-[10px] text-surface-500">{new Date(entry.date).toLocaleDateString()}</p>
+                                                {/* Claim history panel */}
+                                                {claimsData ? (
+                                                    <>
+                                                        <h4 className="text-sm font-semibold text-surface-200 mb-3">
+                                                            Claim History ({claimsData.claim_count})
+                                                        </h4>
+                                                        {claimsLoading ? (
+                                                            <p className="text-xs text-surface-500">Loading...</p>
+                                                        ) : claimsData.claims.length === 0 ? (
+                                                            <p className="text-xs text-surface-500">Not claimed yet.</p>
+                                                        ) : (
+                                                            <div className="space-y-2">
+                                                                {claimsData.claims.map((c, i) => (
+                                                                    <div key={c.id} className="flex items-center justify-between p-2.5 bg-surface-700/40 rounded-xl text-sm">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-xs">🏆</span>
+                                                                            <div>
+                                                                                <p className="text-surface-300 text-xs font-medium">Claim #{claimsData.claim_count - i}</p>
+                                                                                <p className="text-[10px] text-surface-500">{new Date(c.claimed_at).toLocaleDateString()}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <span className="text-amber-400 font-bold text-sm">{c.points_at_claim} pts</span>
                                                                     </div>
-                                                                </div>
-                                                                <span className="text-amber-400 font-bold text-sm">+{entry.points_earned} pts</span>
+                                                                ))}
                                                             </div>
-                                                        ))}
-                                                    </div>
+                                                        )}
+                                                        <button onClick={() => setClaimsData(null)} className="mt-3 text-xs text-surface-500 hover:text-surface-300">
+                                                            Show point log instead
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <h4 className="text-sm font-semibold text-surface-200 mb-3">Point History</h4>
+                                                        {logLoading ? (
+                                                            <p className="text-xs text-surface-500">Loading...</p>
+                                                        ) : logData?.log?.length === 0 ? (
+                                                            <p className="text-xs text-surface-500">No points earned yet. Complete chores and goals!</p>
+                                                        ) : (
+                                                            <div className="space-y-2">
+                                                                {logData?.log?.map((entry) => (
+                                                                    <div key={`${entry.type}-${entry.id}`} className="flex items-center justify-between p-2.5 bg-surface-700/40 rounded-xl text-sm">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-xs">{entry.type === 'chore' ? '🧹' : '🎯'}</span>
+                                                                            <div>
+                                                                                <p className="text-surface-300 capitalize text-xs font-medium">{entry.type} completion</p>
+                                                                                <p className="text-[10px] text-surface-500">{new Date(entry.date).toLocaleDateString()}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <span className="text-amber-400 font-bold text-sm">+{entry.points_earned} pts</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </>
                                                 )}
                                             </div>
                                         </motion.div>
@@ -376,6 +490,7 @@ export default function AchievementsView() {
                                                 <p className="text-surface-300 font-medium">{ach.prize_name}</p>
                                                 <p className="text-[10px] text-surface-500">
                                                     {ach.is_claimed ? `Claimed ${new Date(ach.claimed_at).toLocaleDateString()}` : 'Inactive'}
+                                                    {ach.claim_count > 1 && ` · ${ach.claim_count}× total`}
                                                 </p>
                                             </div>
                                         </div>
