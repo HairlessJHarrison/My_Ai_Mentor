@@ -11,6 +11,7 @@ from database import get_session
 from models.goal import (
     PersonalGoal, PersonalGoalCreate, PersonalGoalUpdate,
     GoalCompletion, GoalCompleteRequest,
+    GoalMilestone, GoalMilestoneCreate, GoalMilestoneUpdate,
 )
 from services.goal_tracker import calculate_goal_points, get_goal_progress
 from websocket import manager
@@ -118,6 +119,140 @@ async def complete_goal(
 
     await manager.broadcast("goal_completed", completion.model_dump(mode="json"))
     return completion
+
+
+@router.get("/{goal_id}/milestones")
+async def list_milestones(
+    goal_id: int,
+    session: Session = Depends(get_session),
+    _auth: str = Depends(verify_api_key),
+):
+    """List milestones for a goal, ordered by display order."""
+    goal = session.get(PersonalGoal, goal_id)
+    if not goal:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    stmt = select(GoalMilestone).where(
+        GoalMilestone.goal_id == goal_id
+    ).order_by(GoalMilestone.order, GoalMilestone.created_at)
+    milestones = session.exec(stmt).all()
+    completed = sum(1 for m in milestones if m.completed)
+    return {
+        "milestones": [m.model_dump(mode="json") for m in milestones],
+        "total": len(milestones),
+        "completed": completed,
+    }
+
+
+@router.post("/{goal_id}/milestones", status_code=201)
+async def create_milestone(
+    goal_id: int,
+    body: GoalMilestoneCreate,
+    session: Session = Depends(get_session),
+    _auth: str = Depends(verify_api_key),
+):
+    """Add a milestone to a goal."""
+    goal = session.get(PersonalGoal, goal_id)
+    if not goal:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    milestone = GoalMilestone(
+        household_id=goal.household_id,
+        goal_id=goal_id,
+        title=body.title,
+        order=body.order,
+        points_reward=body.points_reward,
+    )
+    session.add(milestone)
+    session.commit()
+    session.refresh(milestone)
+    return milestone
+
+
+@router.put("/{goal_id}/milestones/{milestone_id}")
+async def update_milestone(
+    goal_id: int,
+    milestone_id: int,
+    body: GoalMilestoneUpdate,
+    session: Session = Depends(get_session),
+    _auth: str = Depends(verify_api_key),
+):
+    """Update a milestone."""
+    milestone = session.get(GoalMilestone, milestone_id)
+    if not milestone or milestone.goal_id != goal_id:
+        raise HTTPException(status_code=404, detail="Milestone not found")
+    update_data = body.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(milestone, key, value)
+    session.add(milestone)
+    session.commit()
+    session.refresh(milestone)
+    return milestone
+
+
+@router.delete("/{goal_id}/milestones/{milestone_id}")
+async def delete_milestone(
+    goal_id: int,
+    milestone_id: int,
+    session: Session = Depends(get_session),
+    _auth: str = Depends(verify_api_key),
+):
+    """Delete a milestone."""
+    milestone = session.get(GoalMilestone, milestone_id)
+    if not milestone or milestone.goal_id != goal_id:
+        raise HTTPException(status_code=404, detail="Milestone not found")
+    session.delete(milestone)
+    session.commit()
+    return {"deleted": True}
+
+
+@router.post("/{goal_id}/milestones/{milestone_id}/complete", status_code=201)
+async def complete_milestone(
+    goal_id: int,
+    milestone_id: int,
+    session: Session = Depends(get_session),
+    _auth: str = Depends(verify_api_key),
+):
+    """Complete a milestone, awarding points. Points split from goal if not set on milestone."""
+    goal = session.get(PersonalGoal, goal_id)
+    if not goal:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    milestone = session.get(GoalMilestone, milestone_id)
+    if not milestone or milestone.goal_id != goal_id:
+        raise HTTPException(status_code=404, detail="Milestone not found")
+    if milestone.completed:
+        raise HTTPException(status_code=400, detail="Milestone already completed")
+
+    # Determine points: use milestone's own reward, or auto-split from goal
+    if milestone.points_reward > 0:
+        points = milestone.points_reward
+    else:
+        total_milestones = session.exec(
+            select(GoalMilestone).where(GoalMilestone.goal_id == goal_id)
+        ).all()
+        points = max(1, round(goal.points_per_completion / max(len(total_milestones), 1)))
+
+    milestone.completed = True
+    milestone.completed_at = dt.datetime.utcnow()
+    session.add(milestone)
+
+    # Create a GoalCompletion so it counts toward achievements
+    completion = GoalCompletion(
+        household_id=goal.household_id,
+        goal_id=goal_id,
+        member_id=goal.member_id,
+        date=dt.date.today(),
+        notes=f"Milestone: {milestone.title}",
+        points_earned=points,
+    )
+    session.add(completion)
+    session.commit()
+    session.refresh(milestone)
+    session.refresh(completion)
+
+    await manager.broadcast("goal_completed", completion.model_dump(mode="json"))
+    return {
+        "milestone": milestone.model_dump(mode="json"),
+        "points_earned": points,
+    }
 
 
 @router.get("/progress")

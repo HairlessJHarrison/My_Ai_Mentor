@@ -6,11 +6,11 @@ from .activity import Activity, ActivityCreate
 from .presence import PresenceSession, PresenceSessionCreate
 from .config import HouseholdConfig, HouseholdConfigUpdate
 from .member import Member, MemberCreate, MemberUpdate
-from .goal import PersonalGoal, PersonalGoalCreate, PersonalGoalUpdate, GoalCompletion, GoalCompleteRequest
+from .goal import PersonalGoal, PersonalGoalCreate, PersonalGoalUpdate, GoalCompletion, GoalCompleteRequest, GoalMilestone, GoalMilestoneCreate, GoalMilestoneUpdate
 from .chore import Chore, ChoreCreate, ChoreUpdate, ChoreCompletion, ChoreCompleteRequest
 from .csv_mapping import CsvColumnMapping, CsvColumnMappingCreate
 from .todo import TodoItem, TodoItemCreate, TodoItemUpdate
-from .achievement import Achievement, AchievementCreate, AchievementUpdate
+from .achievement import Achievement, AchievementCreate, AchievementUpdate, AchievementClaim
 
 __all__ = [
     "ScheduleEvent", "ScheduleEventCreate", "ScheduleEventUpdate",
@@ -23,9 +23,10 @@ __all__ = [
     "Member", "MemberCreate", "MemberUpdate",
     "PersonalGoal", "PersonalGoalCreate", "PersonalGoalUpdate",
     "GoalCompletion", "GoalCompleteRequest",
+    "GoalMilestone", "GoalMilestoneCreate", "GoalMilestoneUpdate",
     "Chore", "ChoreCreate", "ChoreUpdate",
     "ChoreCompletion", "ChoreCompleteRequest",
     "CsvColumnMapping", "CsvColumnMappingCreate",
     "TodoItem", "TodoItemCreate", "TodoItemUpdate",
-    "Achievement", "AchievementCreate", "AchievementUpdate",
+    "Achievement", "AchievementCreate", "AchievementUpdate", "AchievementClaim",
 ]

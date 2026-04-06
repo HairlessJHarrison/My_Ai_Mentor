@@ -8,7 +8,7 @@ from sqlmodel import Session, select, func
 
 from auth import verify_api_key
 from database import get_session
-from models.achievement import Achievement, AchievementCreate, AchievementUpdate
+from models.achievement import Achievement, AchievementCreate, AchievementUpdate, AchievementClaim
 from models.chore import ChoreCompletion
 from models.goal import GoalCompletion
 from websocket import manager
@@ -126,19 +126,37 @@ async def claim_achievement(
     session: Session = Depends(get_session),
     _auth: str = Depends(verify_api_key),
 ):
-    """Claim a completed achievement prize."""
+    """Claim a completed achievement prize. Renewable achievements reset progress instead of locking."""
     achievement = session.get(Achievement, achievement_id)
     if not achievement:
         raise HTTPException(status_code=404, detail="Achievement not found")
-    if achievement.is_claimed:
+    if achievement.is_claimed and not achievement.renewable:
         raise HTTPException(status_code=400, detail="Achievement already claimed")
 
     progress = _compute_progress(achievement, session)
     if progress["percent"] < 100:
         raise HTTPException(status_code=400, detail="Achievement not yet complete")
 
-    achievement.is_claimed = True
-    achievement.claimed_at = dt.datetime.utcnow()
+    now = dt.datetime.utcnow()
+    claim_record = AchievementClaim(
+        achievement_id=achievement_id,
+        household_id=achievement.household_id,
+        member_id=achievement.member_id,
+        claimed_at=now,
+        points_at_claim=progress["points_earned"],
+    )
+    session.add(claim_record)
+
+    achievement.claim_count = (achievement.claim_count or 0) + 1
+    achievement.claimed_at = now
+
+    if achievement.renewable:
+        # Reset progress by moving the start date forward
+        achievement.created_at = now
+        achievement.is_claimed = False
+    else:
+        achievement.is_claimed = True
+
     session.add(achievement)
     session.commit()
     session.refresh(achievement)
@@ -203,3 +221,27 @@ async def get_achievement_progress(
     data.update(progress)
     data["log"] = log
     return data
+
+
+@router.get("/{achievement_id}/claims")
+async def get_claim_history(
+    achievement_id: int,
+    session: Session = Depends(get_session),
+    _auth: str = Depends(verify_api_key),
+):
+    """Return the full claim history for an achievement."""
+    achievement = session.get(Achievement, achievement_id)
+    if not achievement:
+        raise HTTPException(status_code=404, detail="Achievement not found")
+
+    claims = session.exec(
+        select(AchievementClaim)
+        .where(AchievementClaim.achievement_id == achievement_id)
+        .order_by(AchievementClaim.claimed_at.desc())
+    ).all()
+
+    return {
+        "achievement_id": achievement_id,
+        "claim_count": achievement.claim_count or 0,
+        "claims": [c.model_dump(mode="json") for c in claims],
+    }
