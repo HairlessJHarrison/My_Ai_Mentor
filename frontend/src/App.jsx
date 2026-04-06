@@ -17,6 +17,7 @@ import CalendarView from './views/CalendarView';
 import ReflectionView from './views/ReflectionView';
 import SettingsView from './views/SettingsView';
 import AchievementsView from './views/AchievementsView';
+import RecipesView from './views/RecipesView';
 
 export default function App() {
   return (
@@ -39,6 +40,7 @@ export default function App() {
               <Route path="/calendar" element={<CalendarView />} />
               <Route path="/reflection" element={<ReflectionView />} />
               <Route path="/achievements" element={<AchievementsView />} />
+              <Route path="/recipes" element={<RecipesView />} />
               <Route path="/settings" element={<SettingsView />} />
             </Route>
           </Routes>
