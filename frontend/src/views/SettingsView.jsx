@@ -1,15 +1,72 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHousehold } from '../context/HouseholdContext';
-import { get, post, put, del } from '../hooks/useApi';
+import { useKiosk } from '../context/KioskContext';
+import { get, post, put, del, api } from '../hooks/useApi';
 
 export default function SettingsView() {
     const navigate = useNavigate();
     const { members, refresh } = useHousehold();
+    const { settings: kioskSettings, saveSettings: saveKioskSettings, isFullscreen, enterFullscreen, exitFullscreen } = useKiosk();
     const [calendarStatus, setCalendarStatus] = useState({});
     const [syncing, setSyncing] = useState(false);
     const [syncResult, setSyncResult] = useState(null);
     const [error, setError] = useState('');
+
+    // ── Kiosk settings state ───────────────────────────────────────────────────
+    const [kioskDraft, setKioskDraft] = useState(kioskSettings);
+    const [kioskSaving, setKioskSaving] = useState(false);
+    const [kioskSaved, setKioskSaved] = useState(false);
+    const [photos, setPhotos] = useState([]);
+    const [uploadingPhoto, setUploadingPhoto] = useState(false);
+    const photoInputRef = useRef(null);
+
+    // Keep draft in sync if settings loaded async
+    useEffect(() => { setKioskDraft(kioskSettings); }, [kioskSettings]);
+
+    // Load photos on mount
+    useEffect(() => {
+        get('/kiosk/photos').then(setPhotos).catch(() => { });
+    }, []);
+
+    const saveKiosk = useCallback(async () => {
+        setKioskSaving(true);
+        try {
+            await saveKioskSettings(kioskDraft);
+            setKioskSaved(true);
+            setTimeout(() => setKioskSaved(false), 2000);
+        } catch {
+            // silently fail
+        } finally {
+            setKioskSaving(false);
+        }
+    }, [kioskDraft, saveKioskSettings]);
+
+    const handlePhotoUpload = useCallback(async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setUploadingPhoto(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const result = await api('/kiosk/photos', { method: 'POST', body: formData });
+            setPhotos(prev => [...prev, result]);
+        } catch {
+            // silently fail
+        } finally {
+            setUploadingPhoto(false);
+            if (photoInputRef.current) photoInputRef.current.value = '';
+        }
+    }, []);
+
+    const deletePhoto = useCallback(async (filename) => {
+        try {
+            await del(`/kiosk/photos/${encodeURIComponent(filename)}`);
+            setPhotos(prev => prev.filter(p => p.filename !== filename));
+        } catch {
+            // silently fail
+        }
+    }, []);
 
     const connectCalendar = useCallback(async (member) => {
         setCalendarStatus((prev) => ({ ...prev, [member.id]: 'connecting' }));
@@ -264,6 +321,205 @@ export default function SettingsView() {
                         Auto-syncs every hour in the background
                     </div>
                 )}
+            </section>
+
+            {/* Kiosk Mode Section */}
+            <section className="bg-surface-800/60 rounded-2xl border border-surface-700/50 p-6 mb-6">
+                <div className="mb-6">
+                    <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
+                        <svg className="w-5 h-5 text-ocean-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <rect x="2" y="3" width="20" height="14" rx="2" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 21h8M12 17v4" />
+                        </svg>
+                        Kiosk &amp; Screensaver
+                    </h2>
+                    <p className="text-surface-400 text-sm mt-1">
+                        Wall-mount display mode with idle screensaver for the Raspberry Pi touchscreen.
+                    </p>
+                </div>
+
+                <div className="space-y-4">
+                    {/* Enable kiosk toggle */}
+                    <div className="flex items-center justify-between p-4 bg-surface-700/50 rounded-xl border border-surface-600/50">
+                        <div>
+                            <p className="text-surface-100 font-medium text-sm">Kiosk Mode</p>
+                            <p className="text-surface-500 text-xs mt-0.5">Hides cursor on idle, prevents screen sleep, enables screensaver</p>
+                        </div>
+                        <button
+                            onClick={() => setKioskDraft(d => ({ ...d, enabled: !d.enabled }))}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                                ${kioskDraft.enabled ? 'bg-ocean-600' : 'bg-surface-600'}`}
+                        >
+                            <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform
+                                ${kioskDraft.enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                        </button>
+                    </div>
+
+                    {/* Auto fullscreen toggle */}
+                    <div className="flex items-center justify-between p-4 bg-surface-700/50 rounded-xl border border-surface-600/50">
+                        <div>
+                            <p className="text-surface-100 font-medium text-sm">Auto Fullscreen on Startup</p>
+                            <p className="text-surface-500 text-xs mt-0.5">Automatically enters fullscreen when the app loads</p>
+                        </div>
+                        <button
+                            onClick={() => setKioskDraft(d => ({ ...d, auto_fullscreen: !d.auto_fullscreen }))}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                                ${kioskDraft.auto_fullscreen ? 'bg-ocean-600' : 'bg-surface-600'}`}
+                        >
+                            <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform
+                                ${kioskDraft.auto_fullscreen ? 'translate-x-6' : 'translate-x-1'}`} />
+                        </button>
+                    </div>
+
+                    {/* Idle timeout */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-surface-700/50 rounded-xl border border-surface-600/50">
+                        <div>
+                            <p className="text-surface-100 font-medium text-sm">Screensaver Timeout</p>
+                            <p className="text-surface-500 text-xs mt-0.5">How long before the screensaver activates</p>
+                        </div>
+                        <select
+                            value={kioskDraft.idle_timeout_seconds}
+                            onChange={e => setKioskDraft(d => ({ ...d, idle_timeout_seconds: parseInt(e.target.value) }))}
+                            className="bg-surface-600 border border-surface-500 text-surface-200 rounded-lg px-3 py-1.5 text-sm
+                                focus:outline-none focus:border-ocean-500"
+                        >
+                            <option value={0}>Never</option>
+                            <option value={30}>30 seconds</option>
+                            <option value={60}>1 minute</option>
+                            <option value={120}>2 minutes</option>
+                            <option value={300}>5 minutes</option>
+                            <option value={600}>10 minutes</option>
+                        </select>
+                    </div>
+
+                    {/* Family name */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-surface-700/50 rounded-xl border border-surface-600/50">
+                        <div>
+                            <p className="text-surface-100 font-medium text-sm">Family Name</p>
+                            <p className="text-surface-500 text-xs mt-0.5">Shown on the screensaver clock when no photos are configured</p>
+                        </div>
+                        <input
+                            type="text"
+                            value={kioskDraft.family_name}
+                            onChange={e => setKioskDraft(d => ({ ...d, family_name: e.target.value }))}
+                            className="bg-surface-600 border border-surface-500 text-surface-200 rounded-lg px-3 py-1.5 text-sm
+                                focus:outline-none focus:border-ocean-500 w-44"
+                            placeholder="Our Family"
+                        />
+                    </div>
+
+                    {/* Fullscreen controls */}
+                    <div className="flex flex-wrap gap-2 p-4 bg-surface-700/50 rounded-xl border border-surface-600/50">
+                        <p className="w-full text-surface-100 font-medium text-sm mb-1">Fullscreen Controls</p>
+                        <button
+                            onClick={isFullscreen ? exitFullscreen : enterFullscreen}
+                            className="px-4 py-2 bg-ocean-600/20 border border-ocean-600/30 text-ocean-300
+                                hover:bg-ocean-600/30 rounded-xl text-sm font-medium transition-colors min-h-[40px]
+                                flex items-center gap-2"
+                        >
+                            {isFullscreen ? (
+                                <>
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M15 9h4.5M15 9V4.5M15 15H4.5M15 15v4.5M9 15H4.5M9 15v4.5" />
+                                    </svg>
+                                    Exit Fullscreen
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                                    </svg>
+                                    Enter Fullscreen
+                                </>
+                            )}
+                        </button>
+                        <p className="w-full text-surface-500 text-xs mt-1">
+                            Triple-tap the top-right corner to exit kiosk mode and fullscreen from any screen.
+                        </p>
+                    </div>
+
+                    {/* Save kiosk settings */}
+                    <div className="flex justify-end">
+                        <button
+                            onClick={saveKiosk}
+                            disabled={kioskSaving}
+                            className={`px-5 py-2 rounded-xl text-sm font-medium transition-colors min-h-[40px]
+                                ${kioskSaved
+                                    ? 'bg-forest-600/20 text-forest-400 border border-forest-600/30'
+                                    : 'bg-ocean-600/20 border border-ocean-600/30 text-ocean-300 hover:bg-ocean-600/30'
+                                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        >
+                            {kioskSaving ? 'Saving…' : kioskSaved ? '✓ Saved' : 'Save Kiosk Settings'}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Screensaver Photos */}
+                <div className="mt-6 pt-6 border-t border-surface-700/50">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 className="text-surface-100 font-medium text-sm">Screensaver Photos</h3>
+                            <p className="text-surface-500 text-xs mt-0.5">
+                                {photos.length === 0
+                                    ? 'No photos — clock display will be shown instead'
+                                    : `${photos.length} photo${photos.length !== 1 ? 's' : ''} in rotation`}
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => photoInputRef.current?.click()}
+                            disabled={uploadingPhoto}
+                            className="px-4 py-2 bg-surface-600 hover:bg-surface-500 text-surface-200 rounded-xl text-sm
+                                font-medium transition-colors flex items-center gap-2 min-h-[40px] active:scale-[0.97]
+                                disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {uploadingPhoto ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-surface-400/30 border-t-surface-400 rounded-full animate-spin" />
+                                    Uploading…
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                                    </svg>
+                                    Upload Photo
+                                </>
+                            )}
+                        </button>
+                        <input
+                            ref={photoInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/gif,image/webp"
+                            className="hidden"
+                            onChange={handlePhotoUpload}
+                        />
+                    </div>
+
+                    {photos.length > 0 && (
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                            {photos.map(photo => (
+                                <div key={photo.filename} className="relative group aspect-square rounded-lg overflow-hidden bg-surface-700">
+                                    <img
+                                        src={photo.url}
+                                        alt=""
+                                        className="w-full h-full object-cover"
+                                        loading="lazy"
+                                    />
+                                    <button
+                                        onClick={() => deletePhoto(photo.filename)}
+                                        className="absolute inset-0 flex items-center justify-center
+                                            bg-black/0 hover:bg-black/60 transition-colors opacity-0 group-hover:opacity-100"
+                                        title="Delete photo"
+                                    >
+                                        <svg className="w-6 h-6 text-white drop-shadow" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </section>
 
             {/* Reminder Notifications Section */}

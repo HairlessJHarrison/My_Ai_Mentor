@@ -12,6 +12,7 @@ from .csv_mapping import CsvColumnMapping, CsvColumnMappingCreate
 from .todo import TodoItem, TodoItemCreate, TodoItemUpdate
 from .achievement import Achievement, AchievementCreate, AchievementUpdate, AchievementClaim
 from .notification import Notification, NotificationCreate, ReminderConfig, ReminderConfigUpdate
+from .kiosk import KioskSettings, KioskSettingsUpdate
 
 __all__ = [
     "ScheduleEvent", "ScheduleEventCreate", "ScheduleEventUpdate",
@@ -31,4 +32,5 @@ __all__ = [
     "TodoItem", "TodoItemCreate", "TodoItemUpdate",
     "Achievement", "AchievementCreate", "AchievementUpdate", "AchievementClaim",
     "Notification", "NotificationCreate", "ReminderConfig", "ReminderConfigUpdate",
+    "KioskSettings", "KioskSettingsUpdate",
 ]

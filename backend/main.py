@@ -3,6 +3,7 @@ import logging
 import os
 import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from dotenv import load_dotenv
@@ -12,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
 
-from database import create_db_and_tables, get_session, migrate_chore_schedule_columns, migrate_achievement_renewal_columns
+from database import create_db_and_tables, get_session, migrate_chore_schedule_columns, migrate_achievement_renewal_columns, migrate_kiosk_settings
 from websocket import manager
 
 logger = logging.getLogger("unplugged.autosync")
@@ -37,6 +38,7 @@ from api.achievements import router as achievements_router
 from api.dashboard import router as dashboard_router
 from api.notifications import router as notifications_router
 from api.backups import router as backups_router
+from api.kiosk import router as kiosk_router
 
 START_TIME = time.time()
 
@@ -190,6 +192,9 @@ async def lifespan(app: FastAPI):
     create_db_and_tables()
     migrate_chore_schedule_columns()
     migrate_achievement_renewal_columns()
+    migrate_kiosk_settings()
+    # Ensure photos directory exists for static file serving
+    Path(os.getenv("PHOTOS_DIR", "data/photos")).mkdir(parents=True, exist_ok=True)
     scheduler.add_job(_auto_sync_all, "interval", minutes=60, id="google_calendar_sync")
     scheduler.add_job(_check_daily_goal_reminders, "interval", minutes=5, id="goal_reminders")
     scheduler.add_job(_daily_backup, "cron", hour=3, minute=0, id="daily_db_backup")
@@ -217,6 +222,7 @@ tags_metadata = [
     {"name": "Achievements", "description": "Per-member achievement cups with prize goals earned through chores and goals."},
     {"name": "Notifications", "description": "In-app notifications and configurable daily goal reminder scheduling."},
     {"name": "Backups", "description": "Trigger manual database backups and list available snapshots."},
+    {"name": "Kiosk", "description": "Kiosk display mode settings and screensaver photo library management."},
 ]
 
 app = FastAPI(
@@ -251,6 +257,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Serve screensaver photos as static files — directory is created in lifespan
+_photos_dir = Path(os.getenv("PHOTOS_DIR", "data/photos"))
+_photos_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/photos", StaticFiles(directory=str(_photos_dir)), name="photos")
+
 # Register API routers
 app.include_router(schedules_router)
 app.include_router(meals_router)
@@ -268,6 +279,7 @@ app.include_router(achievements_router)
 app.include_router(dashboard_router)
 app.include_router(notifications_router)
 app.include_router(backups_router)
+app.include_router(kiosk_router)
 
 
 AVATAR_DIR = os.getenv("AVATAR_DIR", "data/avatars")
