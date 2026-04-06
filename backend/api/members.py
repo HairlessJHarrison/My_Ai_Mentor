@@ -2,8 +2,10 @@
 
 import datetime as dt
 import os
+import shutil
+import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlmodel import Session, select
 
 from auth import verify_api_key
@@ -13,6 +15,9 @@ from models.activity import Activity
 from models.goal import GoalCompletion
 from models.chore import ChoreCompletion
 from websocket import manager
+
+AVATAR_DIR = os.getenv("AVATAR_DIR", "data/avatars")
+AVATAR_BASE_URL = os.getenv("AVATAR_BASE_URL", "/api/v1/members/avatars")
 
 router = APIRouter(prefix="/api/v1/members", tags=["Members"])
 
@@ -151,3 +156,54 @@ async def get_member_score(
             "chores": chore_points,
         },
     }
+
+
+@router.post("/{member_id}/avatar")
+async def upload_member_avatar(
+    member_id: int,
+    file: UploadFile = File(...),
+    session: Session = Depends(get_session),
+    _auth: str = Depends(verify_api_key),
+):
+    """Upload a profile photo for a member. Accepts image files (JPEG, PNG, WebP, GIF)."""
+    member = session.get(Member, member_id)
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    content_type = file.content_type or ""
+    if not content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+
+    ext_map = {
+        "image/jpeg": "jpg",
+        "image/jpg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp",
+        "image/gif": "gif",
+    }
+    ext = ext_map.get(content_type, "jpg")
+
+    os.makedirs(AVATAR_DIR, exist_ok=True)
+
+    # Remove old avatar file if it exists and was a local upload
+    if member.avatar and member.avatar.startswith(AVATAR_BASE_URL):
+        old_filename = member.avatar.split("/")[-1]
+        old_path = os.path.join(AVATAR_DIR, old_filename)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
+    filename = f"{member_id}_{uuid.uuid4().hex[:8]}.{ext}"
+    file_path = os.path.join(AVATAR_DIR, filename)
+
+    with open(file_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    avatar_url = f"{AVATAR_BASE_URL}/{filename}"
+    member.avatar = avatar_url
+    session.add(member)
+    session.commit()
+    session.refresh(member)
+
+    await manager.broadcast("member_updated", {"member_id": member_id, "avatar": avatar_url})
+
+    return {"avatar_url": avatar_url, "member": member.model_dump(mode="json")}

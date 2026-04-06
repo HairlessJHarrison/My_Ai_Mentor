@@ -8,6 +8,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
 
@@ -267,6 +268,11 @@ app.include_router(achievements_router)
 app.include_router(dashboard_router)
 app.include_router(notifications_router)
 app.include_router(backups_router)
+
+
+AVATAR_DIR = os.getenv("AVATAR_DIR", "data/avatars")
+os.makedirs(AVATAR_DIR, exist_ok=True)
+app.mount("/api/v1/members/avatars", StaticFiles(directory=AVATAR_DIR), name="avatars")
 
 
 @app.get("/api/v1/health")

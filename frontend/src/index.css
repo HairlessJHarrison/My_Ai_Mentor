@@ -65,6 +65,10 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--color-surface-600); border-radius: 3px; }
 
+/* ── Utility: hide scrollbar ── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
 /* ── Card shimmer animation ── */
 @keyframes card-slide-in {
   from { opacity: 0; transform: translateY(12px); }
