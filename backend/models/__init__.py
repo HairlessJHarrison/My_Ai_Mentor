@@ -13,6 +13,8 @@ from .todo import TodoItem, TodoItemCreate, TodoItemUpdate
 from .achievement import Achievement, AchievementCreate, AchievementUpdate, AchievementClaim
 from .notification import Notification, NotificationCreate, ReminderConfig, ReminderConfigUpdate
 from .kiosk import KioskSettings, KioskSettingsUpdate
+from .recipe import Recipe, RecipeCreate, RecipeUpdate
+from .recipe_rating import MealRating, MealRatingCreate, MemberPreference, MemberPreferenceSet
 
 __all__ = [
     "ScheduleEvent", "ScheduleEventCreate", "ScheduleEventUpdate",
@@ -33,4 +35,6 @@ __all__ = [
     "Achievement", "AchievementCreate", "AchievementUpdate", "AchievementClaim",
     "Notification", "NotificationCreate", "ReminderConfig", "ReminderConfigUpdate",
     "KioskSettings", "KioskSettingsUpdate",
+    "Recipe", "RecipeCreate", "RecipeUpdate",
+    "MealRating", "MealRatingCreate", "MemberPreference", "MemberPreferenceSet",
 ]

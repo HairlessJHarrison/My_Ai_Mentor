@@ -14,6 +14,8 @@ from models.member import Member, MemberCreate, MemberUpdate
 from models.activity import Activity
 from models.goal import GoalCompletion
 from models.chore import ChoreCompletion
+from models.recipe import Recipe
+from models.recipe_rating import MemberPreference
 from websocket import manager
 
 AVATAR_DIR = os.getenv("AVATAR_DIR", "data/avatars")
@@ -207,3 +209,32 @@ async def upload_member_avatar(
     await manager.broadcast("member_updated", {"member_id": member_id, "avatar": avatar_url})
 
     return {"avatar_url": avatar_url, "member": member.model_dump(mode="json")}
+
+
+@router.get("/{member_id}/preferences")
+async def get_member_preferences(
+    member_id: int,
+    session: Session = Depends(get_session),
+    _auth: str = Depends(verify_api_key),
+):
+    """Get all recipe preferences for a member (preferences + favorites)."""
+    member = session.get(Member, member_id)
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    prefs = session.exec(
+        select(MemberPreference).where(
+            MemberPreference.household_id == HOUSEHOLD_ID,
+            MemberPreference.member_id == member_id,
+        )
+    ).all()
+
+    # Enrich with recipe names
+    recipe_ids = [p.recipe_id for p in prefs]
+    recipes = session.exec(select(Recipe).where(Recipe.id.in_(recipe_ids))).all() if recipe_ids else []
+    recipe_map = {r.id: r.name for r in recipes}
+
+    return [
+        {**p.model_dump(mode="json"), "recipe_name": recipe_map.get(p.recipe_id)}
+        for p in prefs
+    ]
