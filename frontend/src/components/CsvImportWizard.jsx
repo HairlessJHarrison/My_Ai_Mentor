@@ -142,7 +142,7 @@ export default function CsvImportWizard({ onClose, onImported }) {
                                     <label className="flex items-center gap-2 text-sm text-surface-300">
                                         <input type="number" value={newMapping.skip_rows}
                                             onChange={e => setNewMapping(m => ({ ...m, skip_rows: e.target.value }))}
-                                            min="0" className="w-20 bg-surface-700 text-surface-100 rounded-lg px-3 py-2 text-sm outline-none min-h-[44px]" />
+                                            min="0" className="w-20 bg-surface-700 text-surface-100 rounded-lg px-3 py-2 text-sm outline-none min-h-[48px]" />
                                         Skip rows
                                     </label>
                                     <label className="flex items-center gap-2 text-sm text-surface-300">
@@ -153,16 +153,16 @@ export default function CsvImportWizard({ onClose, onImported }) {
                                     </label>
                                 </div>
                                 <button onClick={saveMapping}
-                                    className="w-full py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                                    className="w-full py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                                     Save Mapping
                                 </button>
                             </div>
                         )}
 
                         <div className="flex gap-3 justify-end pt-2">
-                            <button onClick={() => setStep(1)} className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[44px] active:scale-[0.97]">Back</button>
+                            <button onClick={() => setStep(1)} className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[48px] active:scale-[0.97]">Back</button>
                             <button onClick={runPreview} disabled={!selectedMapping || loading}
-                                className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50 min-h-[44px] active:scale-[0.97]">
+                                className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50 min-h-[48px] active:scale-[0.97]">
                                 {loading ? 'Loading...' : 'Preview'}
                             </button>
                         </div>
@@ -199,9 +199,9 @@ export default function CsvImportWizard({ onClose, onImported }) {
                             <p className="text-xs text-surface-500">...and {preview.rows.length - 5} more</p>
                         )}
                         <div className="flex gap-3 justify-end">
-                            <button onClick={() => setStep(2)} className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[44px] active:scale-[0.97]">Back</button>
+                            <button onClick={() => setStep(2)} className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[48px] active:scale-[0.97]">Back</button>
                             <button onClick={runImport} disabled={loading}
-                                className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50 min-h-[44px] active:scale-[0.97]">
+                                className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50 min-h-[48px] active:scale-[0.97]">
                                 {loading ? 'Importing...' : 'Import All'}
                             </button>
                         </div>
@@ -217,7 +217,7 @@ export default function CsvImportWizard({ onClose, onImported }) {
                         {result.skipped > 0 && <p className="text-xs text-surface-400">{result.skipped} skipped</p>}
                         {result.errors > 0 && <p className="text-xs text-rose-400">{result.errors} errors</p>}
                         <button onClick={onClose}
-                            className="mt-6 px-6 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                            className="mt-6 px-6 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                             Done
                         </button>
                     </div>

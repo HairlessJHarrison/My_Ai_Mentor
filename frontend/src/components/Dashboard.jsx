@@ -106,12 +106,12 @@ export default function Dashboard() {
                     </div>
                     <div className="flex items-center gap-3">
                         <button onClick={() => navigate('/calendar')}
-                            className="px-4 py-2.5 bg-ocean-600/20 border border-ocean-600/30 text-ocean-300 hover:bg-ocean-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                            className="px-4 py-2.5 bg-ocean-600/20 border border-ocean-600/30 text-ocean-300 hover:bg-ocean-600/30 rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                             📆 Calendar
                         </button>
                         <NotificationBell />
                         <button onClick={() => navigate('/settings')}
-                            className="p-2.5 bg-surface-700/50 border border-surface-600/50 text-surface-400 hover:text-surface-200 hover:bg-surface-700 rounded-xl transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-[0.97]"
+                            className="p-2.5 bg-surface-700/50 border border-surface-600/50 text-surface-400 hover:text-surface-200 hover:bg-surface-700 rounded-xl transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center active:scale-[0.97]"
                             title="Settings">
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                 <path strokeLinecap="round" strokeLinejoin="round"
@@ -179,7 +179,7 @@ export default function Dashboard() {
                                 <button
                                     key={mins}
                                     onClick={() => setDuration(mins)}
-                                    className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all min-h-[44px] active:scale-[0.97] ${duration === mins
+                                    className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all min-h-[48px] active:scale-[0.97] ${duration === mins
                                             ? 'bg-forest-600 text-white'
                                             : 'bg-surface-700 text-surface-300 hover:bg-surface-600'
                                         }`}
@@ -192,14 +192,14 @@ export default function Dashboard() {
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setShowUnplugDialog(false)}
-                                className="flex-1 py-3 bg-surface-700 hover:bg-surface-600 text-surface-300 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]"
+                                className="flex-1 py-3 bg-surface-700 hover:bg-surface-600 text-surface-300 rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={startUnplugged}
                                 disabled={startingSession}
-                                className="flex-1 py-3 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-semibold transition-colors min-h-[44px] active:scale-[0.97]
+                                className="flex-1 py-3 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-semibold transition-colors min-h-[48px] active:scale-[0.97]
                            disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {startingSession ? 'Starting...' : '🌿 Start'}

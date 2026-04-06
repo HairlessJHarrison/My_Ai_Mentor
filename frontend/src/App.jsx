@@ -25,8 +25,8 @@ export default function App() {
         <HouseholdProvider>
           <Screensaver />
           <UnpluggedMode />
-          <Layout>
-            <Routes>
+          <Routes>
+            <Route element={<Layout />}>
               <Route path="/" element={<DashboardView />} />
               <Route path="/hub" element={<Dashboard />} />
               <Route path="/schedule" element={<ScheduleView />} />
@@ -40,8 +40,8 @@ export default function App() {
               <Route path="/reflection" element={<ReflectionView />} />
               <Route path="/achievements" element={<AchievementsView />} />
               <Route path="/settings" element={<SettingsView />} />
-            </Routes>
-          </Layout>
+            </Route>
+          </Routes>
         </HouseholdProvider>
       </KioskProvider>
     </BrowserRouter>

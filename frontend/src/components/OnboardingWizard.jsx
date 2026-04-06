@@ -211,7 +211,7 @@ export default function OnboardingWizard({ onComplete }) {
                         </div>
                         <span className="w-3 h-3 rounded-full" style={{ backgroundColor: m.color }} />
                       </div>
-                      <button onClick={() => editMember(i)} className="text-surface-400 hover:text-surface-200 text-sm px-3 py-2 min-h-[44px] flex items-center rounded-xl active:scale-[0.97]">
+                      <button onClick={() => editMember(i)} className="text-surface-400 hover:text-surface-200 text-sm px-3 py-2 min-h-[48px] flex items-center rounded-xl active:scale-[0.97]">
                         Edit
                       </button>
                     </div>
@@ -300,7 +300,7 @@ export default function OnboardingWizard({ onComplete }) {
                 <div className="flex gap-2">
                   {editingIdx !== null && (
                     <button onClick={cancelEdit}
-                      className="flex-1 py-2.5 bg-surface-600 hover:bg-surface-500 text-surface-300 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                      className="flex-1 py-2.5 bg-surface-600 hover:bg-surface-500 text-surface-300 rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                       Cancel
                     </button>
                   )}
@@ -308,7 +308,7 @@ export default function OnboardingWizard({ onComplete }) {
                     onClick={saveMember}
                     disabled={saving}
                     className="flex-1 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-semibold
-                      transition-colors disabled:opacity-50 min-h-[44px] active:scale-[0.97]"
+                      transition-colors disabled:opacity-50 min-h-[48px] active:scale-[0.97]"
                   >
                     {saving ? 'Saving...' : editingIdx !== null ? 'Update' : 'Add Member'}
                   </button>
@@ -372,7 +372,7 @@ export default function OnboardingWizard({ onComplete }) {
                         <button
                           onClick={() => connectCalendar(m)}
                           className="px-4 py-2.5 bg-surface-600 hover:bg-surface-500 text-surface-200 rounded-xl text-sm
-                            font-medium transition-colors flex items-center gap-2 min-h-[44px] active:scale-[0.97]"
+                            font-medium transition-colors flex items-center gap-2 min-h-[48px] active:scale-[0.97]"
                         >
                           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M19.5 3h-15A1.5 1.5 0 003 4.5v15A1.5 1.5 0 004.5 21h15a1.5 1.5 0 001.5-1.5v-15A1.5 1.5 0 0019.5 3zM12 17.25a.75.75 0 01-.75-.75v-3.75H7.5a.75.75 0 010-1.5h3.75V7.5a.75.75 0 011.5 0v3.75h3.75a.75.75 0 010 1.5h-3.75v3.75a.75.75 0 01-.75.75z" />

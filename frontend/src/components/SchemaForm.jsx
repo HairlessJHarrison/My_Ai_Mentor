@@ -173,12 +173,12 @@ export default function SchemaForm({ modelName, onSubmit, initialData = {}, subm
             <div className="flex gap-3 justify-end pt-2">
                 {onCancel && (
                     <button type="button" onClick={onCancel}
-                        className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[44px] active:scale-[0.97]">
+                        className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[48px] active:scale-[0.97]">
                         Cancel
                     </button>
                 )}
                 <button type="submit"
-                    className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium min-h-[44px] active:scale-[0.97]">
+                    className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium min-h-[48px] active:scale-[0.97]">
                     {submitLabel}
                 </button>
             </div>

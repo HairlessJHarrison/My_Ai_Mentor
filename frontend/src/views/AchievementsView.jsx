@@ -172,11 +172,11 @@ export default function AchievementsView() {
 
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200 p-2 -ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl active:scale-[0.97]">&larr;</button>
+                    <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200 p-2 -ml-2 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-xl active:scale-[0.97]">&larr;</button>
                     <h1 className="text-2xl font-bold text-surface-100">🏆 Achievements</h1>
                 </div>
                 <button onClick={openNewForm}
-                    className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                    className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                     + New Achievement
                 </button>
             </div>
@@ -245,9 +245,9 @@ export default function AchievementsView() {
 
                         <div className="flex gap-3 justify-end">
                             <button type="button" onClick={() => { setShowForm(false); setEditingId(null); }}
-                                className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[44px] active:scale-[0.97]">Cancel</button>
+                                className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[48px] active:scale-[0.97]">Cancel</button>
                             <button type="submit"
-                                className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium min-h-[44px] active:scale-[0.97]">
+                                className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium min-h-[48px] active:scale-[0.97]">
                                 {editingId ? 'Save Changes' : 'Create Achievement'}
                             </button>
                         </div>
@@ -337,13 +337,13 @@ export default function AchievementsView() {
                                         <div className="flex flex-col gap-2 shrink-0">
                                             {percent >= 100 ? (
                                                 <button onClick={() => startClaim(ach.id)}
-                                                    className="px-4 py-2 bg-amber-500/20 text-amber-400 rounded-xl text-xs font-semibold hover:bg-amber-500/30 transition-colors min-h-[44px] active:scale-[0.97]">
+                                                    className="px-4 py-2 bg-amber-500/20 text-amber-400 rounded-xl text-xs font-semibold hover:bg-amber-500/30 transition-colors min-h-[48px] active:scale-[0.97]">
                                                     {ach.renewable ? '🔄 Claim & Reset' : 'Claim'}
                                                 </button>
                                             ) : null}
-                                            <div className="flex gap-1.5">
+                                            <div className="flex gap-1">
                                                 <button onClick={() => toggleLog(ach.id)} title="View log"
-                                                    className={`p-2 transition-colors rounded-lg active:scale-[0.97] ${isExpanded ? 'text-surface-200' : 'text-surface-400 hover:text-surface-200'}`}>
+                                                    className={`min-h-[48px] min-w-[48px] flex items-center justify-center transition-colors rounded-lg active:scale-[0.97] ${isExpanded ? 'text-surface-200' : 'text-surface-400 hover:text-surface-200'}`}>
                                                     📋
                                                 </button>
                                                 {ach.renewable && (
@@ -356,16 +356,16 @@ export default function AchievementsView() {
                                                             await loadClaimHistory(ach.id);
                                                         }}
                                                         title="Claim history"
-                                                        className="p-2 text-surface-400 hover:text-surface-200 transition-colors rounded-lg active:scale-[0.97]">
+                                                        className="min-h-[48px] min-w-[48px] flex items-center justify-center text-surface-400 hover:text-surface-200 transition-colors rounded-lg active:scale-[0.97]">
                                                         🕐
                                                     </button>
                                                 )}
                                                 <button onClick={() => openEditForm(ach)} title="Edit"
-                                                    className="p-2 text-surface-400 hover:text-surface-200 transition-colors rounded-lg active:scale-[0.97]">
+                                                    className="min-h-[48px] min-w-[48px] flex items-center justify-center text-surface-400 hover:text-surface-200 transition-colors rounded-lg active:scale-[0.97]">
                                                     ✏️
                                                 </button>
                                                 <button onClick={() => deleteAchievement(ach.id)} title="Remove"
-                                                    className="p-2 text-surface-400 hover:text-rose-400 transition-colors rounded-lg active:scale-[0.97]">
+                                                    className="min-h-[48px] min-w-[48px] flex items-center justify-center text-surface-400 hover:text-rose-400 transition-colors rounded-lg active:scale-[0.97]">
                                                     🗑️
                                                 </button>
                                             </div>
@@ -450,7 +450,7 @@ export default function AchievementsView() {
             {claimedAchievements.length > 0 && (
                 <div className="mt-8">
                     <button onClick={() => setShowHistory(!showHistory)}
-                        className="flex items-center gap-2 text-surface-400 hover:text-surface-200 text-sm font-medium mb-3 active:scale-[0.97]">
+                        className="flex items-center gap-2 text-surface-400 hover:text-surface-200 text-sm font-medium mb-3 min-h-[48px] active:scale-[0.97]">
                         <span className={`transition-transform ${showHistory ? 'rotate-90' : ''}`}>▶</span>
                         History ({claimedAchievements.length})
                     </button>
@@ -500,8 +500,8 @@ export default function AchievementsView() {
                             />
                             {pinError && <p className="text-xs text-rose-400 mb-4 text-center">{pinError}</p>}
                             <div className="flex gap-2 mt-4">
-                                <button onClick={() => setPinEntryMode(false)} className="flex-1 py-2 bg-surface-700 text-surface-300 rounded-xl text-sm font-medium">Cancel</button>
-                                <button onClick={verifyPin} className="flex-1 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-sm font-semibold">Verify</button>
+                                <button onClick={() => setPinEntryMode(false)} className="flex-1 min-h-[48px] bg-surface-700 text-surface-300 rounded-xl text-sm font-medium active:scale-[0.97]">Cancel</button>
+                                <button onClick={verifyPin} className="flex-1 min-h-[48px] bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-sm font-semibold active:scale-[0.97]">Verify</button>
                             </div>
                         </motion.div>
                     </div>

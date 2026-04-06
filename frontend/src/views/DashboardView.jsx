@@ -138,13 +138,13 @@ export default function DashboardView() {
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => navigate('/hub')}
-                            className="px-4 py-2.5 bg-surface-700/50 border border-surface-600/50 text-surface-300 hover:bg-surface-700 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]"
+                            className="px-4 py-2.5 bg-surface-700/50 border border-surface-600/50 text-surface-300 hover:bg-surface-700 rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]"
                         >
                             ☰ Hub
                         </button>
                         <button
                             onClick={() => navigate('/settings')}
-                            className="p-2.5 bg-surface-700/50 border border-surface-600/50 text-surface-400 hover:text-surface-200 hover:bg-surface-700 rounded-xl transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-[0.97]"
+                            className="p-2.5 bg-surface-700/50 border border-surface-600/50 text-surface-400 hover:text-surface-200 hover:bg-surface-700 rounded-xl transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center active:scale-[0.97]"
                             title="Settings"
                         >
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -174,7 +174,7 @@ export default function DashboardView() {
                     </h2>
                     <button
                         onClick={() => navigate('/schedule')}
-                        className="text-xs text-forest-400 hover:text-forest-300 transition-colors"
+                        className="text-xs text-forest-400 hover:text-forest-300 transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center px-2 active:scale-[0.97]"
                     >
                         View all →
                     </button>
@@ -239,7 +239,7 @@ export default function DashboardView() {
                         </h2>
                         <button
                             onClick={() => navigate('/goals')}
-                            className="text-xs text-forest-400 hover:text-forest-300 transition-colors"
+                            className="text-xs text-forest-400 hover:text-forest-300 transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center px-2 active:scale-[0.97]"
                         >
                             View all →
                         </button>
@@ -302,7 +302,7 @@ export default function DashboardView() {
                         </h2>
                         <button
                             onClick={() => navigate('/achievements')}
-                            className="text-xs text-forest-400 hover:text-forest-300 transition-colors"
+                            className="text-xs text-forest-400 hover:text-forest-300 transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center px-2 active:scale-[0.97]"
                         >
                             View all →
                         </button>
