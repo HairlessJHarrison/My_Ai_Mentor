@@ -4,6 +4,7 @@ import { get, post, put, del } from '../hooks/useApi';
 import { useHousehold } from '../context/HouseholdContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Confetti from 'react-confetti';
+import MemberCard from '../components/MemberCard';
 import PointsHistoryChart from '../components/PointsHistoryChart';
 
 const RENEWAL_LABELS = { weekly: 'Weekly', monthly: 'Monthly', quarterly: 'Quarterly' };
@@ -292,7 +293,7 @@ export default function AchievementsView() {
                         const isExpanded = expandedId === ach.id;
 
                         return (
-                            <motion.div key={ach.id} layout className="bg-surface-800 rounded-2xl overflow-hidden">
+                            <MemberCard key={ach.id} color={selectedMemberData?.color}>
                                 <div className="p-5">
                                     <div className="flex items-center gap-4">
                                         {/* Progress circle */}
@@ -462,7 +463,7 @@ export default function AchievementsView() {
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
-                            </motion.div>
+                            </MemberCard>
                         );
                     })}
                 </div>

@@ -2,7 +2,7 @@ import { useHousehold } from '../context/HouseholdContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function ChoreCard() {
-    const { chores } = useHousehold();
+    const { chores, members } = useHousehold();
     const navigate = useNavigate();
 
     // Aggregate chore status across all members
@@ -13,13 +13,16 @@ export default function ChoreCard() {
 
     const progressPercent = totalChores > 0 ? (completedChores / totalChores) * 100 : 0;
 
-    // Find uncompleted chores (deduplicated by chore id)
+    // Find uncompleted chores (deduplicated by chore id), keeping member info for color
     const seen = new Set();
     const uncompleted = [];
-    for (const item of allChoreItems) {
-        if (!item.completed && !seen.has(item.chore.id)) {
-            seen.add(item.chore.id);
-            uncompleted.push(item.chore);
+    for (const memberEntry of membersList) {
+        const member = members.find(m => m.id === memberEntry.member_id);
+        for (const item of (memberEntry.chores || [])) {
+            if (!item.completed && !seen.has(item.chore.id)) {
+                seen.add(item.chore.id);
+                uncompleted.push({ chore: item.chore, member });
+            }
         }
     }
 
@@ -57,12 +60,18 @@ export default function ChoreCard() {
 
             {uncompleted.length > 0 && (
                 <div className="space-y-1.5">
-                    {uncompleted.slice(0, 3).map((chore, i) => (
-                        <div key={chore.id || i} className="flex justify-between text-sm px-3 py-2.5 bg-surface-700/40 rounded-lg">
-                            <span className="text-surface-300">{chore.title}</span>
-                            <span className="text-amber-400">+{chore.points} pts</span>
-                        </div>
-                    ))}
+                    {uncompleted.slice(0, 3).map(({ chore, member }, i) => {
+                        const borderColor = member?.color || '#313b48';
+                        return (
+                            <div key={chore.id || i} className="flex overflow-hidden rounded-lg text-sm bg-surface-700/40">
+                                <div className="w-[4px] shrink-0 rounded-l-lg" style={{ backgroundColor: borderColor }} />
+                                <div className="flex items-center justify-between px-3 py-2.5 flex-1 min-w-0">
+                                    <span className="text-surface-300 truncate">{chore.title}</span>
+                                    <span className="text-amber-400 ml-2 shrink-0">+{chore.points} pts</span>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             )}
             {totalChores > 0 && completedChores === totalChores && (
