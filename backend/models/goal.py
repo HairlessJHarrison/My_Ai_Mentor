@@ -14,6 +14,7 @@ class PersonalGoalBase(SQLModel):
     target_frequency: str = Field(default="daily", description="How often: daily, weekdays, weekly, custom", sa_column=Column(String))
     points_per_completion: int = Field(default=10, description="Points earned each time this goal is completed")
     is_active: bool = Field(default=True, description="Whether this goal is currently being tracked")
+    deadline: dt.date | None = Field(default=None, description="Optional target date to achieve this goal by")
 
 
 class PersonalGoal(PersonalGoalBase, table=True):
@@ -30,6 +31,7 @@ class PersonalGoalCreate(SQLModel):
     category: Literal["learning", "fitness", "creativity", "mindfulness", "health", "other"] = Field(description="Goal category")
     target_frequency: Literal["daily", "weekdays", "weekly", "custom"] = Field(default="daily", description="How often this goal should be completed")
     points_per_completion: int = Field(default=10, description="Points earned per completion")
+    deadline: dt.date | None = Field(default=None, description="Optional target date")
 
 
 class PersonalGoalUpdate(SQLModel):
@@ -38,6 +40,7 @@ class PersonalGoalUpdate(SQLModel):
     target_frequency: Literal["daily", "weekdays", "weekly", "custom"] | None = None
     points_per_completion: int | None = None
     is_active: bool | None = None
+    deadline: dt.date | None = None
 
 
 class GoalCompletion(SQLModel, table=True):

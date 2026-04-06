@@ -37,6 +37,12 @@ def migrate_chore_schedule_columns():
     except sqlite3.OperationalError:
         pass  # column already exists
 
+    # Add deadline to personal_goals table
+    try:
+        conn.execute("ALTER TABLE personal_goals ADD COLUMN deadline TEXT")
+    except sqlite3.OperationalError:
+        pass  # column already exists
+
     conn.commit()
     conn.close()
 

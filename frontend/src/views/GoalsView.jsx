@@ -1,6 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { get, post } from '../hooks/useApi';
+import { get, post, put } from '../hooks/useApi';
+
+function getDeadlineStatus(deadlineStr) {
+    if (!deadlineStr) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const deadline = new Date(deadlineStr + 'T00:00:00');
+    const diffMs = deadline - today;
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays < 0) return { label: 'Overdue', overdue: true };
+    if (diffDays === 0) return { label: 'Due today', overdue: false, urgent: true };
+    if (diffDays === 1) return { label: '1 day left', overdue: false, urgent: true };
+    return { label: `${diffDays} days left`, overdue: false, urgent: diffDays <= 3 };
+}
 
 export default function GoalsView() {
     const navigate = useNavigate();
@@ -10,8 +23,9 @@ export default function GoalsView() {
     const [progress, setProgress] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
+    const [editingGoal, setEditingGoal] = useState(null);
     const [form, setForm] = useState({
-        title: '', category: 'learning', target_frequency: 'daily', points_per_completion: 10,
+        title: '', category: 'learning', target_frequency: 'daily', points_per_completion: 10, deadline: '',
     });
 
     useEffect(() => {
@@ -33,19 +47,47 @@ export default function GoalsView() {
         }).catch(console.error).finally(() => setLoading(false));
     }, [selectedMember]);
 
-    const createGoal = async (e) => {
+    const openNewForm = () => {
+        setEditingGoal(null);
+        setForm({ title: '', category: 'learning', target_frequency: 'daily', points_per_completion: 10, deadline: '' });
+        setShowForm(true);
+    };
+
+    const openEditForm = (goal) => {
+        setEditingGoal(goal);
+        setForm({
+            title: goal.title,
+            category: goal.category,
+            target_frequency: goal.target_frequency,
+            points_per_completion: goal.points_per_completion,
+            deadline: goal.deadline || '',
+        });
+        setShowForm(true);
+    };
+
+    const saveGoal = async (e) => {
         e.preventDefault();
         try {
-            await post('/goals', {
-                ...form,
-                household_id: 'default',
-                member_id: selectedMember,
+            const payload = {
+                title: form.title,
+                category: form.category,
+                target_frequency: form.target_frequency,
                 points_per_completion: parseInt(form.points_per_completion),
-            });
+                deadline: form.deadline || null,
+            };
+            if (editingGoal) {
+                await put(`/goals/${editingGoal.id}`, payload);
+            } else {
+                await post('/goals', {
+                    ...payload,
+                    household_id: 'default',
+                    member_id: selectedMember,
+                });
+            }
             const g = await get(`/goals?member_id=${selectedMember}`);
             setGoals(g);
             setShowForm(false);
-            setForm({ title: '', category: 'learning', target_frequency: 'daily', points_per_completion: 10 });
+            setEditingGoal(null);
         } catch (err) { alert(err.message); }
     };
 
@@ -77,7 +119,7 @@ export default function GoalsView() {
                     <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200 p-2 -ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl active:scale-[0.97]">&larr;</button>
                     <h1 className="text-2xl font-bold text-surface-100">🎯 Personal Goals</h1>
                 </div>
-                <button onClick={() => setShowForm(!showForm)}
+                <button onClick={openNewForm}
                     className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
                     + New Goal
                 </button>
@@ -98,7 +140,10 @@ export default function GoalsView() {
             </div>
 
             {showForm && (
-                <form onSubmit={createGoal} className="bg-surface-800 rounded-2xl p-6 mb-6 space-y-4">
+                <form onSubmit={saveGoal} className="bg-surface-800 rounded-2xl p-6 mb-6 space-y-4">
+                    <h3 className="text-base font-semibold text-surface-100">
+                        {editingGoal ? 'Edit Goal' : 'New Goal'}
+                    </h3>
                     <input type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                         placeholder="Goal title" required
                         className="w-full bg-surface-700 text-surface-100 rounded-xl px-4 py-3 text-sm outline-none" />
@@ -116,9 +161,19 @@ export default function GoalsView() {
                             placeholder="Points" min="1"
                             className="bg-surface-700 text-surface-100 rounded-xl px-4 py-3 text-sm outline-none" />
                     </div>
+                    <div>
+                        <label className="block text-xs text-surface-400 mb-1">Deadline (optional)</label>
+                        <input type="date" value={form.deadline}
+                            onChange={e => setForm(f => ({ ...f, deadline: e.target.value }))}
+                            className="bg-surface-700 text-surface-100 rounded-xl px-4 py-3 text-sm outline-none w-full md:w-48" />
+                    </div>
                     <div className="flex gap-3 justify-end">
-                        <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[44px] active:scale-[0.97]">Cancel</button>
-                        <button type="submit" className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium min-h-[44px] active:scale-[0.97]">Create Goal</button>
+                        <button type="button" onClick={() => { setShowForm(false); setEditingGoal(null); }}
+                            className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[44px] active:scale-[0.97]">Cancel</button>
+                        <button type="submit"
+                            className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium min-h-[44px] active:scale-[0.97]">
+                            {editingGoal ? 'Save Changes' : 'Create Goal'}
+                        </button>
                     </div>
                 </form>
             )}
@@ -131,27 +186,48 @@ export default function GoalsView() {
                 <div className="space-y-3">
                     {goals.filter(g => g.is_active).map(goal => {
                         const streak = getStreak(goal.id);
+                        const dlStatus = getDeadlineStatus(goal.deadline);
                         return (
-                            <div key={goal.id} className="flex items-center justify-between px-5 py-4 bg-surface-800 rounded-2xl">
-                                <div className="flex items-center gap-3">
-                                    <span className="text-xl">{catEmoji[goal.category] || '⭐'}</span>
-                                    <div>
+                            <div key={goal.id}
+                                className={`flex items-center justify-between px-5 py-4 bg-surface-800 rounded-2xl ${dlStatus?.overdue ? 'ring-1 ring-rose-500/40' : ''}`}>
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <span className="text-xl shrink-0">{catEmoji[goal.category] || '⭐'}</span>
+                                    <div className="min-w-0">
                                         <p className="text-surface-100 font-medium">{goal.title}</p>
-                                        <div className="flex items-center gap-2 text-sm text-surface-400 mt-0.5">
+                                        <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-sm text-surface-400 mt-0.5">
                                             <span className="capitalize">{goal.category}</span>
                                             <span>·</span>
                                             <span>{goal.target_frequency}</span>
                                             <span>·</span>
                                             <span className="text-amber-400">+{goal.points_per_completion} pts</span>
+                                            {dlStatus && (
+                                                <>
+                                                    <span>·</span>
+                                                    <span className={
+                                                        dlStatus.overdue
+                                                            ? 'text-rose-400 font-medium'
+                                                            : dlStatus.urgent
+                                                                ? 'text-amber-400 font-medium'
+                                                                : 'text-surface-400'
+                                                    }>
+                                                        {dlStatus.overdue && '⚠ '}{dlStatus.label}
+                                                    </span>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2 shrink-0 ml-3">
                                     {streak > 0 && (
                                         <span className="text-sm text-amber-400 font-medium">
                                             🔥 {streak}d
                                         </span>
                                     )}
+                                    <button onClick={() => openEditForm(goal)}
+                                        className="p-2 text-surface-400 hover:text-surface-200 transition-colors rounded-lg active:scale-[0.97]"
+                                        title="Edit goal">
+                                        ✏️
+                                    </button>
                                     <button onClick={() => completeGoal(goal.id)}
                                         className="px-4 py-2.5 bg-forest-600/20 hover:bg-forest-600 text-forest-400 hover:text-white rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
                                         Done
