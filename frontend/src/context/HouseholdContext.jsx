@@ -22,7 +22,8 @@ export function HouseholdProvider({ children }) {
 
     const refresh = useCallback(async () => {
         try {
-            const [sched, meal, budg, score, pres, conf, mem, gls, chs, tds, achs, notifs] = await Promise.all([
+            // Use allSettled so a single failing endpoint doesn't block everything else
+            const results = await Promise.allSettled([
                 get('/schedules/today'),
                 get('/meals/plan?week=current'),
                 get('/budgets/summary?month=current'),
@@ -36,23 +37,25 @@ export function HouseholdProvider({ children }) {
                 get('/achievements'),
                 get('/notifications?limit=50'),
             ]);
-            setSchedule(sched);
-            setMeals(meal);
-            setBudget(budg);
-            setScoring(score);
-            setPresence(pres);
-            setConfig(conf);
+            const val = (i, fallback) => results[i].status === 'fulfilled' ? results[i].value : fallback;
+            const mem = val(6, []);
+            setSchedule(val(0, { events: [], free_blocks: [] }));
+            setMeals(val(1, { meals: [], total_cost: 0, avg_health_score: 0 }));
+            setBudget(val(2, { categories: [], total_limit: 0, total_spent: 0 }));
+            setScoring(val(3, { activities: [], total_points: 0 }));
+            setPresence(val(4, null));
+            setConfig(val(5, null));
             setMembers(mem);
             // Initialize selectedMemberId to the first member on first load
             setSelectedMemberId(prev => {
                 if (prev !== null) return prev;
                 return mem.length > 0 ? mem[0].id : null;
             });
-            setGoals(gls);
-            setChores(chs);
-            setTodos(tds);
-            setAchievements(achs);
-            setNotifications(notifs);
+            setGoals(val(7, []));
+            setChores(val(8, { members: [] }));
+            setTodos(val(9, []));
+            setAchievements(val(10, []));
+            setNotifications(val(11, []));
         } catch (e) {
             console.error('Failed to load data:', e);
         } finally {
