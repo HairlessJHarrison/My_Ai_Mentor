@@ -1,7 +1,11 @@
 from .schedule import ScheduleEvent, ScheduleEventCreate, ScheduleEventUpdate
 from .recipe import Recipe, RecipeCreate, RecipeUpdate, RecipeIngredient
 from .recipe_rating import MealRating, MealRatingCreate, MemberPreference, MemberPreferenceSet
-from .meal import MealPlan, MealPlanCreate, MealPlanUpdate
+from .meal import (
+    MealPlan, MealPlanCreate, MealPlanUpdate,
+    MealHistory, MealHistoryCreate,
+    ShoppingList, ShoppingListItem, ShoppingListItemCreate, ShoppingListItemUpdate, ShoppingListGenerate,
+)
 from .transaction import Transaction, TransactionCreate
 from .budget import Budget, BudgetCreate
 from .activity import Activity, ActivityCreate
@@ -19,6 +23,8 @@ from .kiosk import KioskSettings, KioskSettingsUpdate
 __all__ = [
     "ScheduleEvent", "ScheduleEventCreate", "ScheduleEventUpdate",
     "MealPlan", "MealPlanCreate", "MealPlanUpdate",
+    "MealHistory", "MealHistoryCreate",
+    "ShoppingList", "ShoppingListItem", "ShoppingListItemCreate", "ShoppingListItemUpdate", "ShoppingListGenerate",
     "Transaction", "TransactionCreate",
     "Budget", "BudgetCreate",
     "Activity", "ActivityCreate",

@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
 
-from database import create_db_and_tables, get_session, migrate_chore_schedule_columns, migrate_achievement_renewal_columns, migrate_kiosk_settings, migrate_meal_plan_cooked
+from database import create_db_and_tables, get_session, migrate_chore_schedule_columns, migrate_achievement_renewal_columns, migrate_kiosk_settings, migrate_meal_plan_cooked, migrate_meal_history_tables
 from websocket import manager
 
 logger = logging.getLogger("unplugged.autosync")
@@ -40,6 +40,7 @@ from api.notifications import router as notifications_router
 from api.backups import router as backups_router
 from api.kiosk import router as kiosk_router
 from api.recipes import router as recipes_router
+from api.shopping_lists import router as shopping_lists_router
 
 START_TIME = time.time()
 
@@ -195,6 +196,7 @@ async def lifespan(app: FastAPI):
     migrate_achievement_renewal_columns()
     migrate_kiosk_settings()
     migrate_meal_plan_cooked()
+    migrate_meal_history_tables()
     # Ensure photos directory exists for static file serving
     Path(os.getenv("PHOTOS_DIR", "data/photos")).mkdir(parents=True, exist_ok=True)
     scheduler.add_job(_auto_sync_all, "interval", minutes=60, id="google_calendar_sync")
@@ -285,6 +287,7 @@ app.include_router(notifications_router)
 app.include_router(backups_router)
 app.include_router(kiosk_router)
 app.include_router(recipes_router)
+app.include_router(shopping_lists_router)
 
 
 AVATAR_DIR = os.getenv("AVATAR_DIR", "data/avatars")

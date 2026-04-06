@@ -43,3 +43,78 @@ class MealPlanUpdate(SQLModel):
     notes: str | None = None
     cooked: bool | None = None
     recipe_id: int | None = None
+
+
+# ---------------------------------------------------------------------------
+# Meal History — tracks what was actually cooked
+# ---------------------------------------------------------------------------
+
+class MealHistory(SQLModel, table=True):
+    __tablename__ = "meal_history"
+
+    id: int | None = Field(default=None, primary_key=True)
+    household_id: str = Field(index=True)
+    meal_plan_id: int | None = Field(default=None, description="Source meal plan, if any")
+    recipe_id: int | None = Field(default=None, description="Future Recipe FK placeholder")
+    recipe_name: str
+    date: dt.date = Field(index=True)
+    meal_type: str = Field(sa_column=Column(String))
+    cooked_by: int | None = Field(default=None, description="member_id of who cooked")
+    notes: str | None = Field(default=None)
+    created_at: dt.datetime = Field(default_factory=lambda: dt.datetime.now(dt.timezone.utc))
+
+
+class MealHistoryCreate(SQLModel):
+    household_id: str = "default"
+    meal_plan_id: int | None = None
+    recipe_id: int | None = None
+    recipe_name: str
+    date: dt.date
+    meal_type: str
+    cooked_by: int | None = None
+    notes: str | None = None
+
+
+# ---------------------------------------------------------------------------
+# Shopping List
+# ---------------------------------------------------------------------------
+
+class ShoppingList(SQLModel, table=True):
+    __tablename__ = "shopping_lists"
+
+    id: int | None = Field(default=None, primary_key=True)
+    household_id: str = Field(index=True)
+    name: str
+    created_at: dt.datetime = Field(default_factory=lambda: dt.datetime.now(dt.timezone.utc))
+
+
+class ShoppingListItem(SQLModel, table=True):
+    __tablename__ = "shopping_list_items"
+
+    id: int | None = Field(default=None, primary_key=True)
+    list_id: int = Field(foreign_key="shopping_lists.id", index=True)
+    ingredient_name: str
+    quantity: float | None = Field(default=None)
+    unit: str | None = Field(default=None)
+    checked: bool = Field(default=False)
+    recipe_source: str | None = Field(default=None, description="Recipe name this ingredient came from")
+
+
+class ShoppingListItemCreate(SQLModel):
+    ingredient_name: str
+    quantity: float | None = None
+    unit: str | None = None
+    recipe_source: str | None = None
+
+
+class ShoppingListItemUpdate(SQLModel):
+    checked: bool | None = None
+    quantity: float | None = None
+    unit: str | None = None
+
+
+class ShoppingListGenerate(SQLModel):
+    household_id: str = "default"
+    name: str
+    start_date: dt.date
+    end_date: dt.date
