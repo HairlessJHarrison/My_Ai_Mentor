@@ -15,6 +15,7 @@ class MealPlanBase(SQLModel):
     prep_time_min: int = Field(description="Preparation time in minutes")
     nutrition_data: dict | None = Field(default=None, sa_column=Column(JSON), description="Optional macros: {calories, protein_g, carbs_g, fat_g}")
     notes: str | None = Field(default=None, description="Additional notes or instructions")
+    cooked: bool = Field(default=False, description="Whether this meal has been cooked")
     recipe_id: int | None = Field(default=None, foreign_key="recipes.id", description="Optional link to a saved recipe")
 
 
@@ -40,4 +41,5 @@ class MealPlanUpdate(SQLModel):
     prep_time_min: int | None = None
     nutrition_data: dict | None = None
     notes: str | None = None
+    cooked: bool | None = None
     recipe_id: int | None = None

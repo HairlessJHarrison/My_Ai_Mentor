@@ -1,5 +1,6 @@
 from .schedule import ScheduleEvent, ScheduleEventCreate, ScheduleEventUpdate
 from .recipe import Recipe, RecipeCreate, RecipeUpdate, RecipeIngredient
+from .recipe_rating import MealRating, MealRatingCreate, MemberPreference, MemberPreferenceSet
 from .meal import MealPlan, MealPlanCreate, MealPlanUpdate
 from .transaction import Transaction, TransactionCreate
 from .budget import Budget, BudgetCreate
@@ -35,4 +36,5 @@ __all__ = [
     "Notification", "NotificationCreate", "ReminderConfig", "ReminderConfigUpdate",
     "KioskSettings", "KioskSettingsUpdate",
     "Recipe", "RecipeCreate", "RecipeUpdate", "RecipeIngredient",
+    "MealRating", "MealRatingCreate", "MemberPreference", "MemberPreferenceSet",
 ]

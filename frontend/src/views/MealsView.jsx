@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { get, post, put, del } from '../hooks/useApi';
 import PresetBrowser from '../components/PresetBrowser';
+import StarRating from '../components/StarRating';
+import PreferenceBadges from '../components/PreferenceBadges';
+import RateAfterCookingModal from '../components/RateAfterCookingModal';
 import { MEAL_PRESETS } from '../data/mealPresets';
 
 const emptyForm = () => ({
@@ -9,6 +12,8 @@ const emptyForm = () => ({
     recipe_name: '', ingredients: '', est_cost: '', health_score: 7,
     prep_time_min: 30, household_id: 'default', recipe_id: null,
 });
+
+const FILTER_TABS = ['All', 'Favorites'];
 
 export default function MealsView() {
     const navigate = useNavigate();
@@ -25,13 +30,76 @@ export default function MealsView() {
     const formRef = useRef(null);
     const [form, setForm] = useState(emptyForm());
 
+    // Ratings & preferences state keyed by recipe_id
+    const [ratingSummaries, setRatingSummaries] = useState({});   // { recipeId: {average, count, by_member} }
+    const [preferences, setPreferences] = useState({});           // { recipeId: [{member_id, preference, is_favorite}] }
+    const [favRecipeIds, setFavRecipeIds] = useState(new Set());  // recipe IDs favorited by any member
+
+    // "After cooking" rating modal
+    const [ratingMeal, setRatingMeal] = useState(null);
+
+    // Active filter tab
+    const [activeFilter, setActiveFilter] = useState('All');
+
+    // Currently expanded meal (shows ratings / preferences inline)
+    const [expandedId, setExpandedId] = useState(null);
+
+    // Which member is "active" for favorite toggling (defaults to first member)
+    const [activeMemberId, setActiveMemberId] = useState(null);
+
     useEffect(() => {
         Promise.all([get('/meals/plan?week=current'), get('/members'), get('/recipes')])
-            .then(([m, mem, recs]) => { setMeals(m); setMembers(mem); setSavedRecipes(recs); })
-            .catch(console.error).finally(() => setLoading(false));
+            .then(([m, mem, recs]) => {
+                setMeals(m);
+                setMembers(mem);
+                setSavedRecipes(recs);
+                if (mem.length > 0) setActiveMemberId(mem[0].id);
+                // Load ratings & preferences for meals that have a recipe_id
+                const recipeIds = [...new Set((m.meals || []).map(x => x.recipe_id).filter(Boolean))];
+                if (recipeIds.length > 0) loadRecipeData(recipeIds, mem);
+            })
+            .catch(console.error)
+            .finally(() => setLoading(false));
     }, []);
 
-    const scrollToForm = () => setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    const loadRecipeData = async (recipeIds, memberList) => {
+        const summaries = {};
+        const prefs = {};
+        await Promise.allSettled(
+            recipeIds.flatMap(rid => [
+                get(`/recipes/${rid}/ratings/summary`).then(s => { summaries[rid] = s; }),
+                get(`/recipes/${rid}/preferences`).then(p => { prefs[rid] = p; }),
+            ])
+        );
+        setRatingSummaries(summaries);
+        setPreferences(prefs);
+
+        // Build fav set
+        const favIds = new Set();
+        Object.entries(prefs).forEach(([rid, ps]) => {
+            if (ps.some(p => p.is_favorite)) favIds.add(parseInt(rid));
+        });
+        setFavRecipeIds(favIds);
+    };
+
+    const refreshRecipe = async (recipeId) => {
+        if (!recipeId) return;
+        const [summary, prefs] = await Promise.all([
+            get(`/recipes/${recipeId}/ratings/summary`),
+            get(`/recipes/${recipeId}/preferences`),
+        ]);
+        setRatingSummaries(prev => ({ ...prev, [recipeId]: summary }));
+        setPreferences(prev => ({ ...prev, [recipeId]: prefs }));
+        setFavRecipeIds(prev => {
+            const next = new Set(prev);
+            if (prefs.some(p => p.is_favorite)) next.add(recipeId);
+            else next.delete(recipeId);
+            return next;
+        });
+    };
+
+    const scrollToForm = () =>
+        setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
 
     const openNewForm = () => {
         setEditingId(null);
@@ -97,7 +165,17 @@ export default function MealsView() {
             if (editingId) {
                 await put(`/meals/plan/${editingId}`, payload);
             } else {
-                await post('/meals/plan', payload);
+                // Find-or-create a Recipe entry so we get a recipe_id
+                const recipe = await post('/recipes/find-or-create', {
+                    household_id: 'default',
+                    name: payload.recipe_name,
+                    category: payload.meal_type,
+                    ingredients: payload.ingredients,
+                    est_cost: payload.est_cost,
+                    health_score: payload.health_score,
+                    prep_time_min: payload.prep_time_min,
+                });
+                await post('/meals/plan', { ...payload, recipe_id: recipe.id });
             }
             const updated = await get('/meals/plan?week=current');
             setMeals(updated);
@@ -106,15 +184,30 @@ export default function MealsView() {
     };
 
     const addFromPreset = async (preset) => {
+        const ingredientList = Array.isArray(preset.ingredients)
+            ? preset.ingredients
+            : preset.ingredients.split(',').map(s => s.trim());
+
+        const recipe = await post('/recipes/find-or-create', {
+            household_id: 'default',
+            name: preset.recipe_name,
+            category: preset.meal_type,
+            ingredients: ingredientList,
+            est_cost: parseFloat(preset.est_cost) || 0,
+            health_score: parseInt(preset.health_score),
+            prep_time_min: parseInt(preset.prep_time_min),
+        });
+
         await post('/meals/plan', {
             household_id: 'default',
             date: preset.date || new Date().toISOString().slice(0, 10),
             meal_type: preset.meal_type,
             recipe_name: preset.recipe_name,
-            ingredients: Array.isArray(preset.ingredients) ? preset.ingredients : preset.ingredients.split(',').map(s => s.trim()),
+            ingredients: ingredientList,
             est_cost: parseFloat(preset.est_cost) || 0,
             health_score: parseInt(preset.health_score),
             prep_time_min: parseInt(preset.prep_time_min),
+            recipe_id: recipe.id,
         });
         const updated = await get('/meals/plan?week=current');
         setMeals(updated);
@@ -127,14 +220,64 @@ export default function MealsView() {
         if (editingId === id) closeForm();
     };
 
+    // Mark a meal as cooked; then prompt for ratings if recipe_id is set
+    const markCooked = async (meal, e) => {
+        e.stopPropagation();
+        try {
+            await put(`/meals/plan/${meal.id}`, { cooked: true });
+            setMeals(prev => ({
+                ...prev,
+                meals: prev.meals.map(m => m.id === meal.id ? { ...m, cooked: true } : m),
+            }));
+            if (meal.recipe_id) {
+                setRatingMeal(meal);
+            }
+        } catch (err) { console.error(err); }
+    };
+
+    // Preference badge tap handler
+    const handleSetPreference = async (recipeId, memberId, preference) => {
+        if (!recipeId) return;
+        try {
+            await put(`/recipes/${recipeId}/preferences`, { member_id: memberId, preference });
+            await refreshRecipe(recipeId);
+        } catch (err) { console.error(err); }
+    };
+
+    // Favorite toggle
+    const handleToggleFavorite = async (meal, e) => {
+        e.stopPropagation();
+        if (!meal.recipe_id || !activeMemberId) return;
+        try {
+            await post(`/recipes/${meal.recipe_id}/favorite?member_id=${activeMemberId}`);
+            await refreshRecipe(meal.recipe_id);
+        } catch (err) { console.error(err); }
+    };
+
     const mealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
     const typeEmoji = { breakfast: '🌅', lunch: '☀️', dinner: '🌙', snack: '🍎' };
 
+    // Filter meals by active tab
+    const displayedMeals = activeFilter === 'Favorites'
+        ? (meals.meals || []).filter(m => m.recipe_id && favRecipeIds.has(m.recipe_id))
+        : (meals.meals || []);
+
+    const isFavorited = (meal) =>
+        meal.recipe_id && activeMemberId
+            ? (preferences[meal.recipe_id] || []).some(
+                p => p.member_id === activeMemberId && p.is_favorite
+              )
+            : false;
+
     return (
         <div className="min-h-screen p-4 md:p-8 max-w-4xl mx-auto">
+            {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200 p-2 -ml-2 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-xl active:scale-[0.97]">&larr;</button>
+                    <button onClick={() => navigate('/')}
+                        className="text-surface-400 hover:text-surface-200 p-2 -ml-2 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-xl active:scale-[0.97]">
+                        &larr;
+                    </button>
                     <h1 className="text-2xl font-bold text-surface-100">🍽️ Meal Plans</h1>
                 </div>
                 <div className="flex gap-2">
@@ -153,8 +296,30 @@ export default function MealsView() {
                 </div>
             </div>
 
+            {/* Active member selector (for favorites) */}
+            {members.length > 1 && (
+                <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+                    <span className="text-xs text-surface-500 self-center flex-shrink-0">Viewing as:</span>
+                    {members.map(m => (
+                        <button
+                            key={m.id}
+                            onClick={() => setActiveMemberId(m.id)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all flex-shrink-0
+                                ${activeMemberId === m.id
+                                    ? 'border-transparent text-white'
+                                    : 'bg-surface-700/40 border-surface-600/40 text-surface-400 hover:text-surface-200'
+                                }`}
+                            style={activeMemberId === m.id ? { backgroundColor: m.color, borderColor: m.color } : {}}
+                        >
+                            {m.avatar && !m.avatar.startsWith('/') ? m.avatar : null}
+                            {m.name.split(' ')[0]}
+                        </button>
+                    ))}
+                </div>
+            )}
+
             {/* Summary bar */}
-            <div className="flex gap-4 mb-6 text-sm">
+            <div className="flex gap-4 mb-4 text-sm">
                 <div className="bg-surface-800 rounded-xl px-4 py-3 flex-1 text-center">
                     <p className="text-surface-400 text-sm">Weekly Cost</p>
                     <p className="text-amber-300 font-semibold">${meals.total_cost?.toFixed(2) || 0}</p>
@@ -169,6 +334,24 @@ export default function MealsView() {
                 </div>
             </div>
 
+            {/* Filter tabs */}
+            <div className="flex gap-1 mb-5 bg-surface-800/60 p-1 rounded-xl w-fit">
+                {FILTER_TABS.map(tab => (
+                    <button
+                        key={tab}
+                        onClick={() => setActiveFilter(tab)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[40px]
+                            ${activeFilter === tab
+                                ? 'bg-surface-700 text-surface-100'
+                                : 'text-surface-400 hover:text-surface-200'
+                            }`}
+                    >
+                        {tab === 'Favorites' ? '❤️ ' : ''}{tab}
+                    </button>
+                ))}
+            </div>
+
+            {/* Add / edit form */}
             {showForm && (
                 <form ref={formRef} onSubmit={submitForm} className="bg-surface-800 rounded-2xl p-6 mb-6 space-y-4">
                     <div className="flex items-center justify-between">
@@ -218,7 +401,10 @@ export default function MealsView() {
                         </div>
                     </div>
                     <div className="flex gap-3 justify-end">
-                        <button type="button" onClick={closeForm} className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[48px] active:scale-[0.97]">Cancel</button>
+                        <button type="button" onClick={closeForm}
+                            className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[48px] active:scale-[0.97]">
+                            Cancel
+                        </button>
                         {editingId && (
                             <button type="button" onClick={() => deleteMeal(editingId)}
                                 className="px-4 py-2.5 bg-rose-600/20 border border-rose-600/30 text-rose-300 hover:bg-rose-600/30 rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
@@ -233,33 +419,175 @@ export default function MealsView() {
                 </form>
             )}
 
+            {/* Meal list */}
             {loading ? (
                 <div className="text-center py-12 text-surface-400">Loading meals...</div>
             ) : (
                 <div className="space-y-3">
-                    {meals.meals?.length === 0 ? (
-                        <div className="text-center py-12 text-surface-400">No meals planned. Add one above!</div>
-                    ) : meals.meals.map((meal) => (
-                        <div key={meal.id}
-                            onClick={() => openEditForm(meal)}
-                            className={`flex items-center gap-4 px-5 py-4 rounded-xl transition-colors cursor-pointer
-                                ${editingId === meal.id ? 'ring-2 ring-forest-500 bg-surface-800' : 'bg-surface-800 hover:bg-surface-750'}`}>
-                            <span className="text-xl">{typeEmoji[meal.meal_type] || '🍽️'}</span>
-                            <div className="flex-1 min-w-0">
-                                <p className="font-medium text-surface-100 truncate">{meal.recipe_name}</p>
-                                <p className="text-sm text-surface-400">
-                                    {meal.date} · {meal.meal_type} · {meal.prep_time_min}m prep
-                                    <span className="ml-2 text-amber-400">${meal.est_cost?.toFixed(2)}</span>
-                                </p>
-                            </div>
-                            <span className="text-xs text-forest-400 font-medium">{meal.health_score}/10</span>
-                            <button onClick={(e) => { e.stopPropagation(); deleteMeal(meal.id); }}
-                                className="text-surface-500 hover:text-rose-400 transition-colors text-sm w-11 h-11 flex items-center justify-center rounded-xl hover:bg-surface-700/50 active:scale-[0.95]">✕</button>
+                    {displayedMeals.length === 0 ? (
+                        <div className="text-center py-12 text-surface-400">
+                            {activeFilter === 'Favorites'
+                                ? 'No favorites yet — heart a meal to add it here.'
+                                : 'No meals planned. Add one above!'}
                         </div>
-                    ))}
+                    ) : displayedMeals.map((meal) => {
+                        const isExpanded = expandedId === meal.id;
+                        const summary = ratingSummaries[meal.recipe_id];
+                        const mealPrefs = preferences[meal.recipe_id] || [];
+                        const faved = isFavorited(meal);
+
+                        return (
+                            <div
+                                key={meal.id}
+                                className={`rounded-xl transition-colors cursor-pointer
+                                    ${editingId === meal.id
+                                        ? 'ring-2 ring-forest-500 bg-surface-800'
+                                        : 'bg-surface-800 hover:bg-surface-750'
+                                    }`}
+                            >
+                                {/* Main row */}
+                                <div
+                                    className="flex items-center gap-3 px-4 py-4"
+                                    onClick={() => setExpandedId(isExpanded ? null : meal.id)}
+                                >
+                                    <span className="text-xl flex-shrink-0">{typeEmoji[meal.meal_type] || '🍽️'}</span>
+
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <p className="font-medium text-surface-100 truncate">{meal.recipe_name}</p>
+                                            {meal.cooked && (
+                                                <span className="text-xs bg-forest-500/20 text-forest-300 border border-forest-500/30 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                                                    ✓ Cooked
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                            <p className="text-sm text-surface-400">
+                                                {meal.date} · {meal.meal_type} · {meal.prep_time_min}m prep
+                                                <span className="ml-2 text-amber-400">${meal.est_cost?.toFixed(2)}</span>
+                                            </p>
+                                            {summary?.average && (
+                                                <span className="flex items-center gap-0.5 text-xs text-amber-400">
+                                                    ★ {summary.average.toFixed(1)}
+                                                    <span className="text-surface-500">({summary.count})</span>
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Favorite heart */}
+                                    {meal.recipe_id && (
+                                        <button
+                                            onClick={(e) => handleToggleFavorite(meal, e)}
+                                            className={`text-xl flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl transition-all active:scale-90
+                                                ${faved ? 'text-rose-400' : 'text-surface-600 hover:text-rose-300'}`}
+                                            title={faved ? 'Remove from favorites' : 'Add to favorites'}
+                                        >
+                                            {faved ? '❤️' : '🤍'}
+                                        </button>
+                                    )}
+
+                                    <span className="text-xs text-forest-400 font-medium flex-shrink-0">
+                                        {meal.health_score}/10
+                                    </span>
+
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); openEditForm(meal); }}
+                                        className="text-surface-500 hover:text-ocean-400 transition-colors text-sm w-9 h-9 flex items-center justify-center rounded-xl hover:bg-surface-700/50 active:scale-[0.95]"
+                                        title="Edit"
+                                    >
+                                        ✎
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); deleteMeal(meal.id); }}
+                                        className="text-surface-500 hover:text-rose-400 transition-colors text-sm w-9 h-9 flex items-center justify-center rounded-xl hover:bg-surface-700/50 active:scale-[0.95]"
+                                        title="Delete"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+
+                                {/* Expanded detail panel */}
+                                {isExpanded && (
+                                    <div className="px-4 pb-4 border-t border-surface-700/50 pt-3 space-y-4">
+                                        {/* Family ratings summary */}
+                                        {meal.recipe_id && (
+                                            <div>
+                                                <p className="text-xs text-surface-500 mb-2 uppercase tracking-wide font-medium">Family Rating</p>
+                                                {summary?.count > 0 ? (
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <StarRating value={Math.round(summary.average)} readonly size="sm" />
+                                                            <span className="text-sm text-amber-400 font-medium">
+                                                                {summary.average.toFixed(1)} / 5
+                                                            </span>
+                                                            <span className="text-xs text-surface-500">
+                                                                ({summary.count} rating{summary.count > 1 ? 's' : ''})
+                                                            </span>
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            {summary.by_member.map(r => {
+                                                                const member = members.find(m => m.id === r.member_id);
+                                                                return (
+                                                                    <div key={r.member_id} className="flex items-center gap-2 text-sm">
+                                                                        {member && (
+                                                                            <span
+                                                                                className="w-2 h-2 rounded-full flex-shrink-0"
+                                                                                style={{ backgroundColor: member.color }}
+                                                                            />
+                                                                        )}
+                                                                        <span className="text-surface-400 w-20 truncate">
+                                                                            {member?.name || `Member ${r.member_id}`}
+                                                                        </span>
+                                                                        <StarRating value={r.rating} readonly size="sm" />
+                                                                        {r.comment && (
+                                                                            <span className="text-surface-500 text-xs truncate italic">
+                                                                                "{r.comment}"
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-sm text-surface-500">No ratings yet</p>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Preference badges */}
+                                        {meal.recipe_id && members.length > 0 && (
+                                            <div>
+                                                <p className="text-xs text-surface-500 mb-2 uppercase tracking-wide font-medium">Preferences</p>
+                                                <PreferenceBadges
+                                                    members={members}
+                                                    preferences={mealPrefs}
+                                                    onSet={(memberId, pref) =>
+                                                        handleSetPreference(meal.recipe_id, memberId, pref)
+                                                    }
+                                                />
+                                            </div>
+                                        )}
+
+                                        {/* Mark as cooked */}
+                                        {!meal.cooked && (
+                                            <button
+                                                onClick={(e) => markCooked(meal, e)}
+                                                className="flex items-center gap-2 px-4 py-2.5 bg-forest-600/20 border border-forest-600/30 text-forest-300 hover:bg-forest-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]"
+                                            >
+                                                ✓ Mark as Cooked
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             )}
 
+            {/* Presets browser */}
             {showPresets && (
                 <PresetBrowser type="meal" presets={MEAL_PRESETS} members={members}
                     onAdd={addFromPreset} onClose={() => setShowPresets(false)} />
@@ -291,8 +619,10 @@ export default function MealsView() {
 
             {/* Grocery list modal */}
             {showGrocery && grocery && (
-                <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowGrocery(false)}>
-                    <div className="bg-surface-800 rounded-2xl p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                    onClick={() => setShowGrocery(false)}>
+                    <div className="bg-surface-800 rounded-2xl p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto"
+                        onClick={e => e.stopPropagation()}>
                         <h2 className="text-xl font-bold text-surface-100 mb-4">🛒 Grocery List</h2>
                         {grocery.items?.length === 0 ? (
                             <p className="text-surface-400">No items — add meal plans first</p>
@@ -312,6 +642,19 @@ export default function MealsView() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Rate after cooking modal */}
+            {ratingMeal && (
+                <RateAfterCookingModal
+                    meal={ratingMeal}
+                    members={members}
+                    onClose={() => setRatingMeal(null)}
+                    onDone={() => {
+                        refreshRecipe(ratingMeal.recipe_id);
+                        setRatingMeal(null);
+                    }}
+                />
             )}
         </div>
     );

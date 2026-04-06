@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
 
-from database import create_db_and_tables, get_session, migrate_chore_schedule_columns, migrate_achievement_renewal_columns, migrate_kiosk_settings, migrate_recipe_columns
+from database import create_db_and_tables, get_session, migrate_chore_schedule_columns, migrate_achievement_renewal_columns, migrate_kiosk_settings, migrate_meal_plan_cooked
 from websocket import manager
 
 logger = logging.getLogger("unplugged.autosync")
@@ -194,7 +194,7 @@ async def lifespan(app: FastAPI):
     migrate_chore_schedule_columns()
     migrate_achievement_renewal_columns()
     migrate_kiosk_settings()
-    migrate_recipe_columns()
+    migrate_meal_plan_cooked()
     # Ensure photos directory exists for static file serving
     Path(os.getenv("PHOTOS_DIR", "data/photos")).mkdir(parents=True, exist_ok=True)
     scheduler.add_job(_auto_sync_all, "interval", minutes=60, id="google_calendar_sync")
@@ -226,6 +226,7 @@ tags_metadata = [
     {"name": "Notifications", "description": "In-app notifications and configurable daily goal reminder scheduling."},
     {"name": "Backups", "description": "Trigger manual database backups and list available snapshots."},
     {"name": "Kiosk", "description": "Kiosk display mode settings and screensaver photo library management."},
+    {"name": "Recipes", "description": "Recipe library with per-member ratings, preferences (loved/liked/disliked), and favorites."},
 ]
 
 app = FastAPI(
