@@ -1,4 +1,5 @@
 import os
+import sqlite3
 from sqlmodel import Session, SQLModel, create_engine
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///data/unplugged.db")
