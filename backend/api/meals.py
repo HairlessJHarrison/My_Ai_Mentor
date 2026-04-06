@@ -1,14 +1,14 @@
-"""Meal module — CRUD for meal plans, grocery list aggregation."""
+"""Meal module — CRUD for meal plans, meal history, suggestions, and grocery list aggregation."""
 
 import datetime as dt
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlmodel import Session, select
+from sqlmodel import Session, select, func, col
 
 from auth import verify_api_key
 from database import get_session
-from models.meal import MealPlan, MealPlanCreate, MealPlanUpdate
+from models.meal import MealHistory, MealHistoryCreate, MealPlan, MealPlanCreate, MealPlanUpdate
 from services.grocery_aggregator import aggregate_grocery_list
 from websocket import manager
 
@@ -118,3 +118,145 @@ async def get_grocery_list(
     stmt = select(MealPlan).where(MealPlan.date >= start, MealPlan.date <= end)
     meals = session.exec(stmt).all()
     return aggregate_grocery_list(list(meals))
+
+
+# ---------------------------------------------------------------------------
+# Meal History
+# ---------------------------------------------------------------------------
+
+@router.post("/history", status_code=201)
+async def log_meal_history(
+    body: MealHistoryCreate,
+    session: Session = Depends(get_session),
+    _auth: str = Depends(verify_api_key),
+):
+    """Log a meal that was actually cooked."""
+    entry = MealHistory.model_validate(body)
+    session.add(entry)
+    session.commit()
+    session.refresh(entry)
+    await manager.broadcast("meal_history_logged", entry.model_dump(mode="json"))
+    return entry
+
+
+@router.get("/history")
+async def get_meal_history(
+    household_id: str = Query(HOUSEHOLD_ID),
+    start_date: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    end_date: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    session: Session = Depends(get_session),
+    _auth: str = Depends(verify_api_key),
+):
+    """List meal history, optionally filtered by date range."""
+    stmt = select(MealHistory).where(MealHistory.household_id == household_id)
+    if start_date:
+        stmt = stmt.where(MealHistory.date >= dt.date.fromisoformat(start_date))
+    if end_date:
+        stmt = stmt.where(MealHistory.date <= dt.date.fromisoformat(end_date))
+    stmt = stmt.order_by(MealHistory.date.desc())
+    entries = session.exec(stmt).all()
+    return {"history": [e.model_dump(mode="json") for e in entries]}
+
+
+@router.post("/plan/{meal_id}/mark-cooked", status_code=201)
+async def mark_plan_cooked(
+    meal_id: int,
+    cooked_by: Optional[int] = Query(None, description="member_id of who cooked"),
+    notes: Optional[str] = Query(None),
+    session: Session = Depends(get_session),
+    _auth: str = Depends(verify_api_key),
+):
+    """Mark a planned meal as cooked — creates a MealHistory entry."""
+    meal = session.get(MealPlan, meal_id)
+    if not meal:
+        raise HTTPException(status_code=404, detail="Meal plan not found")
+
+    entry = MealHistory(
+        household_id=meal.household_id,
+        meal_plan_id=meal.id,
+        recipe_name=meal.recipe_name,
+        date=meal.date,
+        meal_type=meal.meal_type,
+        cooked_by=cooked_by,
+        notes=notes,
+    )
+    session.add(entry)
+    session.commit()
+    session.refresh(entry)
+    await manager.broadcast("meal_history_logged", entry.model_dump(mode="json"))
+    return entry
+
+
+# ---------------------------------------------------------------------------
+# Meal Suggestions
+# ---------------------------------------------------------------------------
+
+@router.get("/suggestions")
+async def get_meal_suggestions(
+    member_ids: Optional[str] = Query(None, description="Comma-separated member IDs (unused until ratings exist)"),
+    count: int = Query(5, ge=1, le=20),
+    household_id: str = Query(HOUSEHOLD_ID),
+    session: Session = Depends(get_session),
+    _auth: str = Depends(verify_api_key),
+):
+    """Return recipe suggestions based on cooking history.
+
+    Algorithm:
+    1. Find distinct recipe names from MealHistory.
+    2. Exclude recipes cooked in the last 7 days.
+    3. Sort by longest time since last cooked (most overdue first).
+    4. Return up to `count` results.
+    5. If history is sparse, pad with recently planned (but not recently cooked) recipes.
+    """
+    today = dt.date.today()
+    cutoff = today - dt.timedelta(days=7)
+
+    # Get last-cooked date per recipe from history
+    subq = (
+        select(MealHistory.recipe_name, func.max(MealHistory.date).label("last_cooked"))
+        .where(MealHistory.household_id == household_id)
+        .group_by(MealHistory.recipe_name)
+        .subquery()
+    )
+
+    # Recipes cooked at least once, excluding those cooked within 7 days
+    stmt = (
+        select(subq.c.recipe_name, subq.c.last_cooked)
+        .where(subq.c.last_cooked <= cutoff)
+        .order_by(subq.c.last_cooked.asc())
+        .limit(count)
+    )
+    rows = session.exec(stmt).all()
+
+    suggestions = [
+        {"recipe_name": row[0], "last_cooked": str(row[1]), "source": "history"}
+        for row in rows
+    ]
+
+    # Pad from MealPlan if not enough history
+    if len(suggestions) < count:
+        needed = count - len(suggestions)
+        already_suggested = {s["recipe_name"].lower() for s in suggestions}
+
+        recent_cooked_names_stmt = select(MealHistory.recipe_name).where(
+            MealHistory.household_id == household_id,
+            MealHistory.date > cutoff,
+        )
+        recently_cooked = {r.lower() for r in session.exec(recent_cooked_names_stmt).all()}
+
+        plan_stmt = (
+            select(MealPlan.recipe_name, func.max(MealPlan.date).label("last_planned"))
+            .where(MealPlan.household_id == household_id)
+            .group_by(MealPlan.recipe_name)
+            .order_by(col("last_planned").asc())
+        )
+        for recipe_name, last_planned in session.exec(plan_stmt).all():
+            if len(suggestions) >= count:
+                break
+            key = recipe_name.lower()
+            if key in already_suggested or key in recently_cooked:
+                continue
+            suggestions.append({"recipe_name": recipe_name, "last_cooked": None, "source": "meal_plan"})
+            already_suggested.add(key)
+
+    return {"suggestions": suggestions}

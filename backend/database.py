@@ -82,6 +82,59 @@ def migrate_kiosk_settings():
     conn.close()
 
 
+def migrate_meal_history_tables():
+    """Ensure meal_history and shopping_list tables exist on older DBs.
+
+    SQLModel's create_all handles new installs; this guards existing DBs
+    that pre-date these tables being added.
+    """
+    if DATABASE_URL in ("sqlite://", "sqlite:///"):
+        return
+    db_path = DATABASE_URL.replace("sqlite:///", "")
+    if not db_path or db_path == DATABASE_URL:
+        return
+    conn = sqlite3.connect(db_path)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS meal_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            household_id TEXT NOT NULL,
+            meal_plan_id INTEGER,
+            recipe_id INTEGER,
+            recipe_name TEXT NOT NULL,
+            date TEXT NOT NULL,
+            meal_type TEXT NOT NULL,
+            cooked_by INTEGER,
+            notes TEXT,
+            created_at TEXT NOT NULL
+        )
+    """)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS shopping_lists (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            household_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+    """)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS shopping_list_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            list_id INTEGER NOT NULL REFERENCES shopping_lists(id),
+            ingredient_name TEXT NOT NULL,
+            quantity REAL,
+            unit TEXT,
+            checked INTEGER NOT NULL DEFAULT 0,
+            recipe_source TEXT
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+
+
 def get_session():
     with Session(engine) as session:
         yield session
