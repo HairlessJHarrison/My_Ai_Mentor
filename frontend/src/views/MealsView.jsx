@@ -118,20 +118,20 @@ export default function MealsView() {
         <div className="min-h-screen p-4 md:p-8 max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200 p-2 -ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl active:scale-[0.97]">&larr;</button>
+                    <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200 p-2 -ml-2 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-xl active:scale-[0.97]">&larr;</button>
                     <h1 className="text-2xl font-bold text-surface-100">🍽️ Meal Plans</h1>
                 </div>
                 <div className="flex gap-2">
                     <button onClick={loadGrocery}
-                        className="px-4 py-2.5 bg-amber-600/20 border border-amber-600/30 text-amber-300 hover:bg-amber-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                        className="px-4 py-2.5 bg-amber-600/20 border border-amber-600/30 text-amber-300 hover:bg-amber-600/30 rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                         🛒 Grocery List
                     </button>
                     <button onClick={() => setShowPresets(true)}
-                        className="px-4 py-2.5 bg-ocean-600/20 border border-ocean-600/30 text-ocean-300 hover:bg-ocean-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                        className="px-4 py-2.5 bg-ocean-600/20 border border-ocean-600/30 text-ocean-300 hover:bg-ocean-600/30 rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                         Browse Presets
                     </button>
                     <button onClick={openNewForm}
-                        className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                        className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                         + Add Meal
                     </button>
                 </div>
@@ -189,15 +189,15 @@ export default function MealsView() {
                         </div>
                     </div>
                     <div className="flex gap-3 justify-end">
-                        <button type="button" onClick={closeForm} className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[44px] active:scale-[0.97]">Cancel</button>
+                        <button type="button" onClick={closeForm} className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[48px] active:scale-[0.97]">Cancel</button>
                         {editingId && (
                             <button type="button" onClick={() => deleteMeal(editingId)}
-                                className="px-4 py-2.5 bg-rose-600/20 border border-rose-600/30 text-rose-300 hover:bg-rose-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                                className="px-4 py-2.5 bg-rose-600/20 border border-rose-600/30 text-rose-300 hover:bg-rose-600/30 rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                                 Delete
                             </button>
                         )}
                         <button type="submit"
-                            className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium min-h-[44px] active:scale-[0.97]">
+                            className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium min-h-[48px] active:scale-[0.97]">
                             {editingId ? 'Save Changes' : 'Create'}
                         </button>
                     </div>

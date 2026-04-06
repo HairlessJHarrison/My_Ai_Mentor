@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { HouseholdProvider } from './context/HouseholdContext';
+import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import DashboardView from './views/DashboardView';
 import UnpluggedMode from './components/UnpluggedMode';
@@ -21,19 +22,21 @@ export default function App() {
       <HouseholdProvider>
         <UnpluggedMode />
         <Routes>
-          <Route path="/" element={<DashboardView />} />
-          <Route path="/hub" element={<Dashboard />} />
-          <Route path="/schedule" element={<ScheduleView />} />
-          <Route path="/meals" element={<MealsView />} />
-          <Route path="/budget" element={<BudgetView />} />
-          <Route path="/scoring" element={<ScoringView />} />
-          <Route path="/goals" element={<GoalsView />} />
-          <Route path="/chores" element={<ChoresView />} />
-          <Route path="/todos" element={<TodoView />} />
-          <Route path="/calendar" element={<CalendarView />} />
-          <Route path="/reflection" element={<ReflectionView />} />
-          <Route path="/achievements" element={<AchievementsView />} />
-          <Route path="/settings" element={<SettingsView />} />
+          <Route element={<Layout />}>
+            <Route path="/" element={<DashboardView />} />
+            <Route path="/hub" element={<Dashboard />} />
+            <Route path="/schedule" element={<ScheduleView />} />
+            <Route path="/meals" element={<MealsView />} />
+            <Route path="/budget" element={<BudgetView />} />
+            <Route path="/scoring" element={<ScoringView />} />
+            <Route path="/goals" element={<GoalsView />} />
+            <Route path="/chores" element={<ChoresView />} />
+            <Route path="/todos" element={<TodoView />} />
+            <Route path="/calendar" element={<CalendarView />} />
+            <Route path="/reflection" element={<ReflectionView />} />
+            <Route path="/achievements" element={<AchievementsView />} />
+            <Route path="/settings" element={<SettingsView />} />
+          </Route>
         </Routes>
       </HouseholdProvider>
     </BrowserRouter>

@@ -60,7 +60,7 @@ export default function NotificationBell() {
                 onClick={() => setOpen(o => !o)}
                 className="relative p-2.5 bg-surface-700/50 border border-surface-600/50 text-surface-400
                     hover:text-surface-200 hover:bg-surface-700 rounded-xl transition-colors
-                    min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-[0.97]"
+                    min-h-[48px] min-w-[48px] flex items-center justify-center active:scale-[0.97]"
                 title="Notifications"
                 aria-label={`Notifications${unread > 0 ? `, ${unread} unread` : ''}`}
             >

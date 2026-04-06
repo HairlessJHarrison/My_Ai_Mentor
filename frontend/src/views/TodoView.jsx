@@ -197,11 +197,11 @@ export default function TodoView() {
         <div className="min-h-screen p-4 md:p-8 max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200 p-2 -ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl active:scale-[0.97]">&larr;</button>
+                    <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200 p-2 -ml-2 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-xl active:scale-[0.97]">&larr;</button>
                     <h1 className="text-2xl font-bold text-surface-100">✅ To-Do List</h1>
                 </div>
                 <button onClick={() => { resetForm(); setShowForm(!showForm); }}
-                    className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                    className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                     + New To-Do
                 </button>
             </div>
@@ -233,8 +233,8 @@ export default function TodoView() {
                         </select>
                     </div>
                     <div className="flex gap-3 justify-end">
-                        <button type="button" onClick={resetForm} className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[44px] active:scale-[0.97]">Cancel</button>
-                        <button type="submit" className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium min-h-[44px] active:scale-[0.97]">
+                        <button type="button" onClick={resetForm} className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[48px] active:scale-[0.97]">Cancel</button>
+                        <button type="submit" className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium min-h-[48px] active:scale-[0.97]">
                             {editingId ? 'Save Changes' : 'Add To-Do'}
                         </button>
                     </div>

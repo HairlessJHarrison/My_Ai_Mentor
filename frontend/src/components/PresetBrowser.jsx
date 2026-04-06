@@ -215,13 +215,13 @@ export default function PresetBrowser({ type, presets, members, onAdd, onClose }
                   ) : (
                     <>
                       <button onClick={() => editingId === preset.id ? cancelEdit() : startEdit(preset)}
-                        className="px-3 py-2.5 text-sm text-surface-400 hover:text-surface-200 transition-colors min-h-[44px] active:scale-[0.97]"
+                        className="px-3 py-2.5 text-sm text-surface-400 hover:text-surface-200 transition-colors min-h-[48px] active:scale-[0.97]"
                         title="Edit before adding">
                         ✏️
                       </button>
                       <button onClick={() => addSingle(preset)}
                         disabled={adding}
-                        className="px-3 py-2.5 text-sm bg-forest-600 hover:bg-forest-500 text-white rounded-lg transition-colors disabled:opacity-50 min-h-[44px] active:scale-[0.97]">
+                        className="px-3 py-2.5 text-sm bg-forest-600 hover:bg-forest-500 text-white rounded-lg transition-colors disabled:opacity-50 min-h-[48px] active:scale-[0.97]">
                         Add
                       </button>
                     </>
@@ -311,7 +311,7 @@ export default function PresetBrowser({ type, presets, members, onAdd, onClose }
                       <div className="flex gap-2 flex-wrap">
                         {members.map(m => (
                           <button key={m.id} type="button" onClick={() => toggleMemberAssignment(m.id)}
-                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm transition-colors min-h-[44px] active:scale-[0.97] ${
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm transition-colors min-h-[48px] active:scale-[0.97] ${
                               editForm.assigned_member_ids?.includes(m.id)
                                 ? 'bg-forest-600 text-white'
                                 : 'bg-surface-700 text-surface-300 hover:bg-surface-600'
@@ -326,11 +326,11 @@ export default function PresetBrowser({ type, presets, members, onAdd, onClose }
 
                   <div className="flex gap-3 justify-end">
                     <button onClick={cancelEdit}
-                      className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[44px] active:scale-[0.97]">
+                      className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[48px] active:scale-[0.97]">
                       Cancel
                     </button>
                     <button onClick={addFromEdit} disabled={adding}
-                      className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium disabled:opacity-50 min-h-[44px] active:scale-[0.97]">
+                      className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium disabled:opacity-50 min-h-[48px] active:scale-[0.97]">
                       Save & Add
                     </button>
                   </div>
@@ -353,12 +353,12 @@ export default function PresetBrowser({ type, presets, members, onAdd, onClose }
           </p>
           <div className="flex gap-3">
             <button onClick={onClose}
-              className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[44px] active:scale-[0.97]">
+              className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[48px] active:scale-[0.97]">
               Close
             </button>
             {selectedIds.size > 0 && (
               <button onClick={bulkAdd} disabled={adding}
-                className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium disabled:opacity-50 min-h-[44px] active:scale-[0.97]">
+                className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium disabled:opacity-50 min-h-[48px] active:scale-[0.97]">
                 {adding ? 'Adding...' : `Add Selected (${selectedIds.size})`}
               </button>
             )}

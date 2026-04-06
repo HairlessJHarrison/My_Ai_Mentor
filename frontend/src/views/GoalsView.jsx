@@ -73,7 +73,7 @@ function MilestoneSection({ goal, memberId }) {
                     {total > 0 && <span className="ml-1.5 text-amber-400">{completed}/{total}</span>}
                 </span>
                 <button onClick={() => setAdding(a => !a)}
-                    className="text-xs text-forest-400 hover:text-forest-300 px-2 py-1 rounded-lg active:scale-[0.97]">
+                    className="text-xs text-forest-400 hover:text-forest-300 min-h-[48px] min-w-[48px] px-2 flex items-center justify-center rounded-lg active:scale-[0.97]">
                     + Add
                 </button>
             </div>
@@ -97,14 +97,14 @@ function MilestoneSection({ goal, memberId }) {
                         value={newTitle}
                         onChange={e => setNewTitle(e.target.value)}
                         placeholder="Milestone title"
-                        className="flex-1 bg-surface-700 text-surface-100 rounded-lg px-3 py-1.5 text-xs outline-none"
+                        className="flex-1 bg-surface-700 text-surface-100 rounded-lg px-3 py-3 text-xs outline-none min-h-[48px]"
                     />
                     <button type="submit"
-                        className="px-3 py-1.5 bg-forest-600 text-white rounded-lg text-xs font-medium active:scale-[0.97]">
+                        className="px-3 bg-forest-600 text-white rounded-lg text-xs font-medium min-h-[48px] min-w-[48px] active:scale-[0.97]">
                         Add
                     </button>
                     <button type="button" onClick={() => { setAdding(false); setNewTitle(''); }}
-                        className="px-3 py-1.5 bg-surface-700 text-surface-400 rounded-lg text-xs active:scale-[0.97]">
+                        className="px-3 bg-surface-700 text-surface-400 rounded-lg text-xs min-h-[48px] min-w-[48px] active:scale-[0.97]">
                         ✕
                     </button>
                 </form>
@@ -122,14 +122,16 @@ function MilestoneSection({ goal, memberId }) {
                             <button
                                 onClick={() => !m.completed && completeMilestone(m.id)}
                                 disabled={m.completed}
-                                className={`w-4 h-4 rounded-full border-2 shrink-0 transition-colors ${
+                                className="min-h-[48px] min-w-[48px] flex items-center justify-center shrink-0 -mx-3 rounded-xl active:scale-[0.97]"
+                                title={m.completed ? 'Completed' : 'Mark complete'}
+                            >
+                                <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
                                     m.completed
                                         ? 'bg-forest-500 border-forest-500'
                                         : 'border-surface-500 hover:border-forest-500'
-                                }`}
-                                title={m.completed ? 'Completed' : 'Mark complete'}
-                            >
-                                {m.completed && <span className="flex items-center justify-center text-white text-[8px] w-full h-full">✓</span>}
+                                }`}>
+                                    {m.completed && <span className="text-white text-[8px]">✓</span>}
+                                </span>
                             </button>
                             <span className={`flex-1 text-xs ${m.completed ? 'line-through text-surface-500' : 'text-surface-300'}`}>
                                 {m.title}
@@ -140,7 +142,7 @@ function MilestoneSection({ goal, memberId }) {
                             {!m.completed && (
                                 <button
                                     onClick={() => deleteMilestone(m.id)}
-                                    className="opacity-0 group-hover:opacity-100 text-surface-600 hover:text-rose-400 text-xs transition-opacity px-1 active:scale-[0.97]"
+                                    className="opacity-0 group-hover:opacity-100 text-surface-600 hover:text-rose-400 text-xs transition-opacity min-h-[48px] min-w-[48px] flex items-center justify-center rounded-lg active:scale-[0.97]"
                                     title="Delete milestone"
                                 >
                                     ✕
@@ -256,11 +258,11 @@ export default function GoalsView() {
         <div className="min-h-screen p-4 md:p-8 max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200 p-2 -ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl active:scale-[0.97]">&larr;</button>
+                    <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200 p-2 -ml-2 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-xl active:scale-[0.97]">&larr;</button>
                     <h1 className="text-2xl font-bold text-surface-100">🎯 Personal Goals</h1>
                 </div>
                 <button onClick={openNewForm}
-                    className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                    className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                     + New Goal
                 </button>
             </div>
@@ -269,7 +271,7 @@ export default function GoalsView() {
             <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
                 {members.map(m => (
                     <button key={m.id} onClick={() => setSelectedMember(m.id)}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-colors min-h-[44px] active:scale-[0.97] ${selectedMember === m.id
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-colors min-h-[48px] active:scale-[0.97] ${selectedMember === m.id
                             ? 'bg-forest-600 text-white'
                             : 'bg-surface-800 text-surface-300 hover:bg-surface-700'
                         }`}>
@@ -309,9 +311,9 @@ export default function GoalsView() {
                     </div>
                     <div className="flex gap-3 justify-end">
                         <button type="button" onClick={() => { setShowForm(false); setEditingGoal(null); }}
-                            className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[44px] active:scale-[0.97]">Cancel</button>
+                            className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[48px] active:scale-[0.97]">Cancel</button>
                         <button type="submit"
-                            className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium min-h-[44px] active:scale-[0.97]">
+                            className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium min-h-[48px] active:scale-[0.97]">
                             {editingGoal ? 'Save Changes' : 'Create Goal'}
                         </button>
                     </div>
@@ -367,18 +369,18 @@ export default function GoalsView() {
                                         )}
                                         <button
                                             onClick={() => setExpandedGoalId(isExpanded ? null : goal.id)}
-                                            className={`p-2 rounded-xl text-sm transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-[0.97] ${isExpanded ? 'text-surface-200 bg-surface-700' : 'text-surface-500 hover:text-surface-300'}`}
+                                            className={`p-2 rounded-xl text-sm transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center active:scale-[0.97] ${isExpanded ? 'text-surface-200 bg-surface-700' : 'text-surface-500 hover:text-surface-300'}`}
                                             title="Milestones"
                                         >
                                             ☑
                                         </button>
                                         <button onClick={() => openEditForm(goal)}
-                                            className="p-2 text-surface-400 hover:text-surface-200 transition-colors rounded-lg active:scale-[0.97]"
+                                            className="min-h-[48px] min-w-[48px] flex items-center justify-center text-surface-400 hover:text-surface-200 transition-colors rounded-lg active:scale-[0.97]"
                                             title="Edit goal">
                                             ✏️
                                         </button>
                                         <button onClick={() => completeGoal(goal.id)}
-                                            className="px-4 py-2.5 bg-forest-600/20 hover:bg-forest-600 text-forest-400 hover:text-white rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                                            className="px-4 py-2.5 bg-forest-600/20 hover:bg-forest-600 text-forest-400 hover:text-white rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                                             Done
                                         </button>
                                     </div>

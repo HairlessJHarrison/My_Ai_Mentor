@@ -516,7 +516,7 @@ export default function CalendarView() {
                             <div className="flex gap-2 flex-wrap">
                                 {DAY_NAMES.map((day, i) => (
                                     <button key={i} type="button" onClick={() => setForm(f => ({ ...f, schedule_day: i }))}
-                                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97] ${form.schedule_day === i
+                                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97] ${form.schedule_day === i
                                             ? 'bg-forest-600 text-white'
                                             : 'bg-surface-700 text-surface-300 hover:bg-surface-600'
                                         }`}>
@@ -532,7 +532,7 @@ export default function CalendarView() {
                             <div className="flex gap-2">
                                 {OCCURRENCE_LABELS.map((label, i) => (
                                     <button key={i} type="button" onClick={() => setForm(f => ({ ...f, schedule_week_of_month: i + 1 }))}
-                                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97] ${form.schedule_week_of_month === i + 1
+                                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97] ${form.schedule_week_of_month === i + 1
                                             ? 'bg-forest-600 text-white'
                                             : 'bg-surface-700 text-surface-300 hover:bg-surface-600'
                                         }`}>
@@ -552,7 +552,7 @@ export default function CalendarView() {
                         <div className="flex flex-wrap gap-2">
                             {members.map(m => (
                                 <button key={m.id} type="button" onClick={() => toggleMemberAssignment(m.id)}
-                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm transition-colors min-h-[44px] active:scale-[0.97] ${
+                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm transition-colors min-h-[48px] active:scale-[0.97] ${
                                         (form.assigned_member_ids || []).includes(m.id)
                                             ? 'bg-forest-600 text-white'
                                             : 'bg-surface-700 text-surface-300 hover:bg-surface-600'
@@ -567,15 +567,15 @@ export default function CalendarView() {
 
                 <div className="flex gap-3 justify-end">
                     <button type="button" onClick={closeForm}
-                        className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[44px] active:scale-[0.97]">Cancel</button>
+                        className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[48px] active:scale-[0.97]">Cancel</button>
                     {editingId && (
                         <button type="button" onClick={deleteItem}
-                            className="px-4 py-2.5 bg-rose-600/20 border border-rose-600/30 text-rose-300 hover:bg-rose-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                            className="px-4 py-2.5 bg-rose-600/20 border border-rose-600/30 text-rose-300 hover:bg-rose-600/30 rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                             Delete
                         </button>
                     )}
                     <button type="submit"
-                        className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium min-h-[44px] active:scale-[0.97]">
+                        className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium min-h-[48px] active:scale-[0.97]">
                         {editingId ? 'Save Changes' : 'Create'}
                     </button>
                 </div>
@@ -599,7 +599,7 @@ export default function CalendarView() {
                         </h2>
                     </div>
                     <button onClick={() => openNewForm(todayDate, 'event')}
-                        className="px-4 py-2.5 bg-ocean-600/20 border border-ocean-600/30 text-ocean-300 hover:bg-ocean-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                        className="px-4 py-2.5 bg-ocean-600/20 border border-ocean-600/30 text-ocean-300 hover:bg-ocean-600/30 rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                         + Event
                     </button>
                 </div>
@@ -663,7 +663,7 @@ export default function CalendarView() {
                         </h2>
                     </div>
                     <button onClick={() => openNewForm(todayDate, 'meal')}
-                        className="px-4 py-2.5 bg-amber-600/20 border border-amber-600/30 text-amber-300 hover:bg-amber-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                        className="px-4 py-2.5 bg-amber-600/20 border border-amber-600/30 text-amber-300 hover:bg-amber-600/30 rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                         + Meal
                     </button>
                 </div>
@@ -721,7 +721,7 @@ export default function CalendarView() {
                         </h2>
                     </div>
                     <button onClick={() => openNewForm(todayDate, 'chore')}
-                        className="px-4 py-2.5 bg-forest-600/20 border border-forest-600/30 text-forest-300 hover:bg-forest-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                        className="px-4 py-2.5 bg-forest-600/20 border border-forest-600/30 text-forest-300 hover:bg-forest-600/30 rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                         + Chore
                     </button>
                 </div>
@@ -899,31 +899,31 @@ export default function CalendarView() {
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200 transition-colors p-2 -ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl active:scale-[0.97]">&larr;</button>
+                    <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200 transition-colors p-2 -ml-2 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-xl active:scale-[0.97]">&larr;</button>
                     <h1 className="text-2xl font-bold text-surface-100">📆 Calendar</h1>
                 </div>
                 <div className="flex items-center gap-2">
                     {/* View mode toggle */}
                     <div className="flex bg-surface-800 rounded-xl p-1 gap-1">
                         <button onClick={() => setViewMode('today')}
-                            className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+                            className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[48px] ${
                                 viewMode === 'today' ? 'bg-forest-600 text-white' : 'text-surface-400 hover:text-surface-200'
                             }`}>
                             Today
                         </button>
                         <button onClick={() => setViewMode('week')}
-                            className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+                            className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[48px] ${
                                 viewMode === 'week' ? 'bg-forest-600 text-white' : 'text-surface-400 hover:text-surface-200'
                             }`}>
                             Week
                         </button>
                     </div>
                     <button onClick={() => setShowPresets('meal')}
-                        className="px-4 py-2.5 bg-amber-600/20 border border-amber-600/30 text-amber-300 hover:bg-amber-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                        className="px-4 py-2.5 bg-amber-600/20 border border-amber-600/30 text-amber-300 hover:bg-amber-600/30 rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                         🍽️ Meal Presets
                     </button>
                     <button onClick={() => setShowPresets('chore')}
-                        className="px-4 py-2.5 bg-forest-600/20 border border-forest-600/30 text-forest-300 hover:bg-forest-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                        className="px-4 py-2.5 bg-forest-600/20 border border-forest-600/30 text-forest-300 hover:bg-forest-600/30 rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                         🧹 Chore Presets
                     </button>
                 </div>
@@ -932,24 +932,24 @@ export default function CalendarView() {
             {/* Navigation */}
             {viewMode === 'today' ? (
                 <div className="flex items-center justify-center gap-4 mb-6">
-                    <button onClick={prevDay} className="px-3 py-2.5 bg-surface-800 hover:bg-surface-700 text-surface-300 rounded-xl text-sm transition-colors min-h-[44px] active:scale-[0.97]">&larr;</button>
+                    <button onClick={prevDay} className="px-3 py-2.5 bg-surface-800 hover:bg-surface-700 text-surface-300 rounded-xl text-sm transition-colors min-h-[48px] active:scale-[0.97]">&larr;</button>
                     <button onClick={goToday}
-                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97] ${
+                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97] ${
                             isTodayActual
                                 ? 'bg-forest-600/20 border border-forest-600/30 text-forest-300'
                                 : 'bg-surface-800 hover:bg-surface-700 text-surface-200'
                         }`}>
                         {todayLabel}
                     </button>
-                    <button onClick={nextDay} className="px-3 py-2.5 bg-surface-800 hover:bg-surface-700 text-surface-300 rounded-xl text-sm transition-colors min-h-[44px] active:scale-[0.97]">&rarr;</button>
+                    <button onClick={nextDay} className="px-3 py-2.5 bg-surface-800 hover:bg-surface-700 text-surface-300 rounded-xl text-sm transition-colors min-h-[48px] active:scale-[0.97]">&rarr;</button>
                 </div>
             ) : (
                 <div className="flex items-center justify-center gap-4 mb-6">
-                    <button onClick={prevWeek} className="px-3 py-2.5 bg-surface-800 hover:bg-surface-700 text-surface-300 rounded-xl text-sm transition-colors min-h-[44px] active:scale-[0.97]">&larr;</button>
-                    <button onClick={goToday} className="px-4 py-2.5 bg-surface-800 hover:bg-surface-700 text-surface-200 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                    <button onClick={prevWeek} className="px-3 py-2.5 bg-surface-800 hover:bg-surface-700 text-surface-300 rounded-xl text-sm transition-colors min-h-[48px] active:scale-[0.97]">&larr;</button>
+                    <button onClick={goToday} className="px-4 py-2.5 bg-surface-800 hover:bg-surface-700 text-surface-200 rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                         {weekLabel}
                     </button>
-                    <button onClick={nextWeek} className="px-3 py-2.5 bg-surface-800 hover:bg-surface-700 text-surface-300 rounded-xl text-sm transition-colors min-h-[44px] active:scale-[0.97]">&rarr;</button>
+                    <button onClick={nextWeek} className="px-3 py-2.5 bg-surface-800 hover:bg-surface-700 text-surface-300 rounded-xl text-sm transition-colors min-h-[48px] active:scale-[0.97]">&rarr;</button>
                 </div>
             )}
 

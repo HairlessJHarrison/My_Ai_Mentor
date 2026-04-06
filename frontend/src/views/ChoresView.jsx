@@ -166,16 +166,16 @@ export default function ChoresView() {
         <div className="min-h-screen p-4 md:p-8 max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200 p-2 -ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl active:scale-[0.97]">&larr;</button>
+                    <button onClick={() => navigate('/')} className="text-surface-400 hover:text-surface-200 p-2 -ml-2 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-xl active:scale-[0.97]">&larr;</button>
                     <h1 className="text-2xl font-bold text-surface-100">🧹 Chore Board</h1>
                 </div>
                 <div className="flex gap-2">
                     <button onClick={() => setShowPresets(true)}
-                        className="px-4 py-2.5 bg-ocean-600/20 border border-ocean-600/30 text-ocean-300 hover:bg-ocean-600/30 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                        className="px-4 py-2.5 bg-ocean-600/20 border border-ocean-600/30 text-ocean-300 hover:bg-ocean-600/30 rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                         Browse Presets
                     </button>
                     <button onClick={openNewForm}
-                        className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                        className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                         + New Chore
                     </button>
                 </div>
@@ -185,7 +185,7 @@ export default function ChoresView() {
             <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
                 {members.map(m => (
                     <button key={m.id} onClick={() => setSelectedMember(m.id)}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-colors min-h-[44px] active:scale-[0.97] ${selectedMember === m.id
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-colors min-h-[48px] active:scale-[0.97] ${selectedMember === m.id
                             ? 'bg-forest-600 text-white'
                             : 'bg-surface-800 text-surface-300 hover:bg-surface-700'
                         }`}>
@@ -224,7 +224,7 @@ export default function ChoresView() {
                             <div className="flex gap-2 flex-wrap">
                                 {DAY_LABELS.map((day, i) => (
                                     <button key={i} type="button" onClick={() => setForm(f => ({ ...f, schedule_day: i }))}
-                                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97] ${form.schedule_day === i
+                                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97] ${form.schedule_day === i
                                             ? 'bg-forest-600 text-white'
                                             : 'bg-surface-700 text-surface-300 hover:bg-surface-600'
                                         }`}>
@@ -240,7 +240,7 @@ export default function ChoresView() {
                             <div className="flex gap-2">
                                 {OCCURRENCE_LABELS.map((label, i) => (
                                     <button key={i} type="button" onClick={() => setForm(f => ({ ...f, schedule_week_of_month: i + 1 }))}
-                                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97] ${form.schedule_week_of_month === i + 1
+                                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97] ${form.schedule_week_of_month === i + 1
                                             ? 'bg-forest-600 text-white'
                                             : 'bg-surface-700 text-surface-300 hover:bg-surface-600'
                                         }`}>
@@ -255,7 +255,7 @@ export default function ChoresView() {
                         <div className="flex gap-2 flex-wrap">
                             {members.map(m => (
                                 <button key={m.id} type="button" onClick={() => toggleMemberAssignment(m.id)}
-                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm transition-colors min-h-[44px] active:scale-[0.97] ${form.assigned_member_ids.includes(m.id)
+                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm transition-colors min-h-[48px] active:scale-[0.97] ${form.assigned_member_ids.includes(m.id)
                                         ? 'bg-forest-600 text-white'
                                         : 'bg-surface-700 text-surface-300 hover:bg-surface-600'
                                     }`}>
@@ -268,12 +268,12 @@ export default function ChoresView() {
                     <div className="flex gap-3 justify-end">
                         {editingId && (
                             <button type="button" onClick={deleteChore}
-                                className="px-4 py-2.5 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white rounded-xl text-sm font-medium transition-colors mr-auto min-h-[44px] active:scale-[0.97]">
+                                className="px-4 py-2.5 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white rounded-xl text-sm font-medium transition-colors mr-auto min-h-[48px] active:scale-[0.97]">
                                 Delete
                             </button>
                         )}
-                        <button type="button" onClick={closeForm} className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[44px] active:scale-[0.97]">Cancel</button>
-                        <button type="submit" className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium min-h-[44px] active:scale-[0.97]">
+                        <button type="button" onClick={closeForm} className="px-4 py-2.5 bg-surface-700 text-surface-300 rounded-xl text-sm min-h-[48px] active:scale-[0.97]">Cancel</button>
+                        <button type="submit" className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium min-h-[48px] active:scale-[0.97]">
                             {editingId ? 'Save Changes' : 'Create Chore'}
                         </button>
                     </div>
@@ -320,12 +320,12 @@ export default function ChoresView() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <button onClick={() => openEditForm(item.chore)}
-                                        className="px-4 py-2.5 bg-surface-700 hover:bg-surface-600 text-surface-300 hover:text-surface-100 rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                                        className="px-4 py-2.5 bg-surface-700 hover:bg-surface-600 text-surface-300 hover:text-surface-100 rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                                         Edit
                                     </button>
                                     {item.completed && !item.verified_by && (
                                         <button onClick={() => verifyChore(item.chore.id)}
-                                            className="px-4 py-2.5 bg-amber-600/20 hover:bg-amber-600 text-amber-400 hover:text-white rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
+                                            className="px-4 py-2.5 bg-amber-600/20 hover:bg-amber-600 text-amber-400 hover:text-white rounded-xl text-sm font-medium transition-colors min-h-[48px] active:scale-[0.97]">
                                             Verify
                                         </button>
                                     )}

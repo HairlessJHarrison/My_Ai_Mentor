@@ -147,7 +147,7 @@ export default function SettingsView() {
                             disabled={syncing}
                             className="px-4 py-2.5 bg-ocean-600/20 border border-ocean-600/30 text-ocean-300
                                 hover:bg-ocean-600/30 rounded-xl text-sm font-medium transition-colors
-                                min-h-[44px] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed
+                                min-h-[48px] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed
                                 flex items-center gap-2"
                         >
                             {syncing ? (
@@ -226,7 +226,7 @@ export default function SettingsView() {
                                             <button
                                                 onClick={() => disconnectCalendar(m)}
                                                 className="px-3 py-2 bg-surface-600 hover:bg-rose-600/20 hover:text-rose-400
-                                                    text-surface-400 rounded-xl text-xs font-medium transition-colors min-h-[44px]"
+                                                    text-surface-400 rounded-xl text-xs font-medium transition-colors min-h-[48px]"
                                             >
                                                 Disconnect
                                             </button>
@@ -240,7 +240,7 @@ export default function SettingsView() {
                                         <button
                                             onClick={() => connectCalendar(m)}
                                             className="px-4 py-2.5 bg-surface-600 hover:bg-surface-500 text-surface-200 rounded-xl text-sm
-                                                font-medium transition-colors flex items-center gap-2 min-h-[44px] active:scale-[0.97]"
+                                                font-medium transition-colors flex items-center gap-2 min-h-[48px] active:scale-[0.97]"
                                         >
                                             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                                                 <path d="M19.5 3h-15A1.5 1.5 0 003 4.5v15A1.5 1.5 0 004.5 21h15a1.5 1.5 0 001.5-1.5v-15A1.5 1.5 0 0019.5 3zM12 17.25a.75.75 0 01-.75-.75v-3.75H7.5a.75.75 0 010-1.5h3.75V7.5a.75.75 0 011.5 0v3.75h3.75a.75.75 0 010 1.5h-3.75v3.75a.75.75 0 01-.75.75z" />
