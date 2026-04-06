@@ -55,6 +55,32 @@
 
 ---
 
+## Meal Tracking & Recipe Management
+
+> **Existing state:** The app has a basic `MealPlan` model with recipe_name, flat ingredients list (strings), est_cost, health_score, prep_time, and optional nutrition_data. This section extends it into a full recipe and meal tracking system.
+
+### Core Recipe System
+- **Full recipe model** — Separate `Recipe` model from `MealPlan`. Recipes should have: name, structured ingredients (with quantity, unit, and item), step-by-step instructions, prep time, cook time, total servings, category (breakfast/lunch/dinner/snack), and an optional photo. Meal plans then reference recipes by ID.
+- **Ingredient tracking** — `RecipeIngredient` model with quantity, unit, and ingredient name. Enable searching/filtering recipes by ingredient ("what can I make with chicken?").
+- **Recipe import from URL** — Paste a recipe URL and auto-extract the recipe using JSON-LD structured data (most recipe sites use Schema.org `Recipe` markup). Fall back to basic HTML parsing if no structured data found.
+
+### Family Feedback & Preferences
+- **Meal rating system** — After a meal is made, family members can rate it (1-5 stars or thumbs up/down). Display average family rating on each recipe.
+- **Per-member preferences** — Each member marks recipes as loved/liked/disliked. Meal planning can filter or prioritize based on everyone's preferences ("no one dislikes this").
+- **Favorite meals** — Quick-favorite toggle on recipes for fast access when planning the week.
+
+### Meal History & Planning
+- **Meal history log** — Track which meals were actually cooked and when (separate from "planned"). Build a history of what the family has eaten over time.
+- **Shopping list generation** — Auto-generate a consolidated shopping list from the week's planned meals. Aggregate duplicate ingredients (e.g., two recipes needing chicken → combined quantity). Allow checking off items.
+- **Meal plan suggestions** — Based on ratings and history, suggest meals the family hasn't had recently that everyone liked. Avoid suggesting disliked meals.
+
+### Optional Enhancements
+- **Nutritional info** — Expand existing `nutrition_data` dict into structured per-serving macros (calories, protein, carbs, fat). Auto-estimate from ingredients if possible.
+- **Meal prep notes** — Allow adding prep-ahead notes (e.g., "marinate overnight", "can freeze portions").
+- **Recipe scaling** — Auto-scale ingredient quantities when changing serving count.
+
+---
+
 ## Technical Debt & Maintenance (V1.0 Remaining)
 
 - Upgrade to timezone-aware datetimes to resolve `datetime.utcnow()` deprecation warnings across Pydantic models and SQLModel schema defs [AGG3.1]
