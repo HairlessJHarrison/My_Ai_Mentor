@@ -7,7 +7,7 @@ import { MEAL_PRESETS } from '../data/mealPresets';
 const emptyForm = () => ({
     date: new Date().toISOString().slice(0, 10), meal_type: 'dinner',
     recipe_name: '', ingredients: '', est_cost: '', health_score: 7,
-    prep_time_min: 30, household_id: 'default',
+    prep_time_min: 30, household_id: 'default', recipe_id: null,
 });
 
 export default function MealsView() {
@@ -19,13 +19,15 @@ export default function MealsView() {
     const [editingId, setEditingId] = useState(null);
     const [showPresets, setShowPresets] = useState(false);
     const [showGrocery, setShowGrocery] = useState(false);
+    const [showRecipePicker, setShowRecipePicker] = useState(false);
+    const [savedRecipes, setSavedRecipes] = useState([]);
     const [members, setMembers] = useState([]);
     const formRef = useRef(null);
     const [form, setForm] = useState(emptyForm());
 
     useEffect(() => {
-        Promise.all([get('/meals/plan?week=current'), get('/members')])
-            .then(([m, mem]) => { setMeals(m); setMembers(mem); })
+        Promise.all([get('/meals/plan?week=current'), get('/members'), get('/recipes')])
+            .then(([m, mem, recs]) => { setMeals(m); setMembers(mem); setSavedRecipes(recs); })
             .catch(console.error).finally(() => setLoading(false));
     }, []);
 
@@ -49,9 +51,22 @@ export default function MealsView() {
             health_score: meal.health_score ?? 7,
             prep_time_min: meal.prep_time_min ?? 30,
             household_id: meal.household_id || 'default',
+            recipe_id: meal.recipe_id || null,
         });
         setShowForm(true);
         scrollToForm();
+    };
+
+    const pickRecipe = (recipe) => {
+        setForm(f => ({
+            ...f,
+            recipe_name: recipe.name,
+            ingredients: (recipe.ingredients || []).map(i => `${i.quantity}${i.unit ? ' ' + i.unit : ''} ${i.ingredient_name}`).join(', '),
+            prep_time_min: (recipe.prep_time_min || 0) + (recipe.cook_time_min || 0) || f.prep_time_min,
+            meal_type: ['breakfast', 'lunch', 'dinner', 'snack'].includes(recipe.category) ? recipe.category : f.meal_type,
+            recipe_id: recipe.id,
+        }));
+        setShowRecipePicker(false);
     };
 
     const closeForm = () => {
@@ -77,6 +92,7 @@ export default function MealsView() {
                 est_cost: parseFloat(form.est_cost) || 0,
                 health_score: parseInt(form.health_score),
                 prep_time_min: parseInt(form.prep_time_min),
+                recipe_id: form.recipe_id || null,
             };
             if (editingId) {
                 await put(`/meals/plan/${editingId}`, payload);
@@ -155,9 +171,22 @@ export default function MealsView() {
 
             {showForm && (
                 <form ref={formRef} onSubmit={submitForm} className="bg-surface-800 rounded-2xl p-6 mb-6 space-y-4">
-                    <p className="text-sm font-medium text-surface-300">
-                        {editingId ? 'Edit Meal' : 'New Meal'}
-                    </p>
+                    <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-surface-300">
+                            {editingId ? 'Edit Meal' : 'New Meal'}
+                        </p>
+                        {savedRecipes.length > 0 && (
+                            <button type="button" onClick={() => setShowRecipePicker(true)}
+                                className="px-3 py-1.5 bg-ocean-600/20 border border-ocean-600/30 text-ocean-300 hover:bg-ocean-600/30 rounded-xl text-xs font-medium transition-colors active:scale-[0.97]">
+                                📖 Pick from Recipes
+                            </button>
+                        )}
+                    </div>
+                    {form.recipe_id && (
+                        <p className="text-xs text-forest-400">
+                            📖 Linked to recipe · <button type="button" onClick={() => setForm(f => ({ ...f, recipe_id: null }))} className="underline text-surface-400 hover:text-surface-200">Unlink</button>
+                        </p>
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <input value={form.recipe_name} onChange={e => setForm(f => ({ ...f, recipe_name: e.target.value }))}
                             placeholder="Recipe name" required
@@ -234,6 +263,30 @@ export default function MealsView() {
             {showPresets && (
                 <PresetBrowser type="meal" presets={MEAL_PRESETS} members={members}
                     onAdd={addFromPreset} onClose={() => setShowPresets(false)} />
+            )}
+
+            {/* Recipe picker modal */}
+            {showRecipePicker && (
+                <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowRecipePicker(false)}>
+                    <div className="bg-surface-800 rounded-2xl p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        <h2 className="text-xl font-bold text-surface-100 mb-4">📖 Pick a Recipe</h2>
+                        {savedRecipes.length === 0 ? (
+                            <p className="text-surface-400 text-sm">No saved recipes yet.</p>
+                        ) : (
+                            <div className="space-y-2">
+                                {savedRecipes.map(r => (
+                                    <button key={r.id} type="button" onClick={() => pickRecipe(r)}
+                                        className="w-full text-left px-4 py-3 bg-surface-700/60 hover:bg-surface-700 rounded-xl transition-colors active:scale-[0.98]">
+                                        <p className="font-medium text-surface-100">{r.name}</p>
+                                        <p className="text-xs text-surface-400 mt-0.5">
+                                            {r.category} · {(r.ingredients || []).length} ingredients · {(r.prep_time_min || 0) + (r.cook_time_min || 0)}m
+                                        </p>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
             )}
 
             {/* Grocery list modal */}

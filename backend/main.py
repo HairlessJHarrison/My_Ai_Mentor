@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
 
-from database import create_db_and_tables, get_session, migrate_chore_schedule_columns, migrate_achievement_renewal_columns, migrate_kiosk_settings
+from database import create_db_and_tables, get_session, migrate_chore_schedule_columns, migrate_achievement_renewal_columns, migrate_kiosk_settings, migrate_recipe_columns
 from websocket import manager
 
 logger = logging.getLogger("unplugged.autosync")
@@ -39,6 +39,7 @@ from api.dashboard import router as dashboard_router
 from api.notifications import router as notifications_router
 from api.backups import router as backups_router
 from api.kiosk import router as kiosk_router
+from api.recipes import router as recipes_router
 
 START_TIME = time.time()
 
@@ -193,6 +194,7 @@ async def lifespan(app: FastAPI):
     migrate_chore_schedule_columns()
     migrate_achievement_renewal_columns()
     migrate_kiosk_settings()
+    migrate_recipe_columns()
     # Ensure photos directory exists for static file serving
     Path(os.getenv("PHOTOS_DIR", "data/photos")).mkdir(parents=True, exist_ok=True)
     scheduler.add_job(_auto_sync_all, "interval", minutes=60, id="google_calendar_sync")
@@ -209,7 +211,8 @@ async def lifespan(app: FastAPI):
 tags_metadata = [
     {"name": "AI Context", "description": "Consolidated endpoints designed for AI agents to get full household state in a single call."},
     {"name": "Schedules", "description": "Manage calendar events, free time blocks, and travel time calculations."},
-    {"name": "Meals", "description": "Meal planning, recipe management, and grocery list generation."},
+    {"name": "Meals", "description": "Meal planning and grocery list generation."},
+    {"name": "Recipes", "description": "Saved recipe library with ingredient management and URL-based import."},
     {"name": "Budgets", "description": "Budget tracking, transaction logging, CSV import, and spending forecasts."},
     {"name": "Scoring", "description": "Presence scoring system — log family activities and track points."},
     {"name": "Presence", "description": "Screen-free unplugged sessions with countdown timer and auto-scoring."},
@@ -280,6 +283,7 @@ app.include_router(dashboard_router)
 app.include_router(notifications_router)
 app.include_router(backups_router)
 app.include_router(kiosk_router)
+app.include_router(recipes_router)
 
 
 AVATAR_DIR = os.getenv("AVATAR_DIR", "data/avatars")

@@ -82,6 +82,22 @@ def migrate_kiosk_settings():
     conn.close()
 
 
+def migrate_recipe_columns():
+    """Add recipe_id FK to meal_plans for existing databases."""
+    if DATABASE_URL in ("sqlite://", "sqlite:///"):
+        return
+    db_path = DATABASE_URL.replace("sqlite:///", "")
+    if not db_path or db_path == DATABASE_URL:
+        return
+    conn = sqlite3.connect(db_path)
+    try:
+        conn.execute("ALTER TABLE meal_plans ADD COLUMN recipe_id INTEGER REFERENCES recipes(id)")
+    except sqlite3.OperationalError:
+        pass  # column already exists
+    conn.commit()
+    conn.close()
+
+
 def get_session():
     with Session(engine) as session:
         yield session
