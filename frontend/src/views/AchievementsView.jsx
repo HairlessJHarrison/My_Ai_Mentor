@@ -10,9 +10,7 @@ const RENEWAL_LABELS = { weekly: 'Weekly', monthly: 'Monthly', quarterly: 'Quart
 
 export default function AchievementsView() {
     const navigate = useNavigate();
-    const { config } = useHousehold();
-    const [members, setMembers] = useState([]);
-    const [selectedMember, setSelectedMember] = useState(null);
+    const { config, members, selectedMemberId: selectedMember } = useHousehold();
     const [achievements, setAchievements] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
@@ -35,13 +33,6 @@ export default function AchievementsView() {
 
     const prefs = config?.preferences || {};
     const actualPin = prefs.parent_pin || null;
-
-    useEffect(() => {
-        get('/members').then(m => {
-            setMembers(m);
-            if (m.length > 0) setSelectedMember(m[0].id);
-        }).catch(console.error);
-    }, []);
 
     useEffect(() => {
         if (!selectedMember) return;
@@ -187,20 +178,6 @@ export default function AchievementsView() {
                     className="px-4 py-2.5 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors min-h-[44px] active:scale-[0.97]">
                     + New Achievement
                 </button>
-            </div>
-
-            {/* Member tabs */}
-            <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-                {members.map(m => (
-                    <button key={m.id} onClick={() => setSelectedMember(m.id)}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-colors min-h-[44px] active:scale-[0.97] ${selectedMember === m.id
-                            ? 'bg-forest-600 text-white'
-                            : 'bg-surface-800 text-surface-300 hover:bg-surface-700'
-                        }`}>
-                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: m.color }} />
-                        {m.name}
-                    </button>
-                ))}
             </div>
 
             {/* Points history chart */}

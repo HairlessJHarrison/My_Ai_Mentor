@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { get, post, put, del } from '../hooks/useApi';
+import { useHousehold } from '../context/HouseholdContext';
 import PresetBrowser from '../components/PresetBrowser';
 import { CHORE_PRESETS } from '../data/chorePresets';
 
 export default function ChoresView() {
     const navigate = useNavigate();
-    const [members, setMembers] = useState([]);
-    const [selectedMember, setSelectedMember] = useState(null);
+    const { members, selectedMemberId: selectedMember } = useHousehold();
     const [choreStatus, setChoreStatus] = useState({ members: [] });
     const [allChores, setAllChores] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -20,12 +20,10 @@ export default function ChoresView() {
     });
 
     useEffect(() => {
-        Promise.all([get('/members'), get('/chores/status'), get('/chores')])
-            .then(([m, s, c]) => {
-                setMembers(m);
+        Promise.all([get('/chores/status'), get('/chores')])
+            .then(([s, c]) => {
                 setChoreStatus(s);
                 setAllChores(c);
-                if (m.length > 0) setSelectedMember(m[0].id);
             }).catch(console.error).finally(() => setLoading(false));
     }, []);
 
@@ -179,20 +177,6 @@ export default function ChoresView() {
                         + New Chore
                     </button>
                 </div>
-            </div>
-
-            {/* Member tabs */}
-            <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-                {members.map(m => (
-                    <button key={m.id} onClick={() => setSelectedMember(m.id)}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-colors min-h-[44px] active:scale-[0.97] ${selectedMember === m.id
-                            ? 'bg-forest-600 text-white'
-                            : 'bg-surface-800 text-surface-300 hover:bg-surface-700'
-                        }`}>
-                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: m.color }} />
-                        {m.name}
-                    </button>
-                ))}
             </div>
 
             {showForm && (

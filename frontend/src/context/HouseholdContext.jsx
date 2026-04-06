@@ -18,6 +18,7 @@ export function HouseholdProvider({ children }) {
     const [achievements, setAchievements] = useState([]);
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedMemberId, setSelectedMemberId] = useState(null);
 
     const refresh = useCallback(async () => {
         try {
@@ -42,6 +43,11 @@ export function HouseholdProvider({ children }) {
             setPresence(pres);
             setConfig(conf);
             setMembers(mem);
+            // Initialize selectedMemberId to the first member on first load
+            setSelectedMemberId(prev => {
+                if (prev !== null) return prev;
+                return mem.length > 0 ? mem[0].id : null;
+            });
             setGoals(gls);
             setChores(chs);
             setTodos(tds);
@@ -127,6 +133,7 @@ export function HouseholdProvider({ children }) {
             members, goals, chores, todos, achievements,
             notifications, markNotificationRead, markAllNotificationsRead, removeNotification,
             loading, connected, refresh, setPresence,
+            selectedMemberId, setSelectedMemberId,
         }}>
             {children}
         </HouseholdContext.Provider>
