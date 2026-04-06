@@ -10,12 +10,52 @@ from auth import verify_api_key
 from database import get_session
 from models.schedule import ScheduleEvent, ScheduleEventCreate, ScheduleEventUpdate
 from services.free_block_finder import find_free_blocks, find_free_blocks_multi_day
+from services.recurrence import expand_recurrence, instance_as_event_like
 from services.travel_time import calculate_travel_time
 from websocket import manager
 
 router = APIRouter(prefix="/api/v1/schedules", tags=["Schedules"])
 
 HOUSEHOLD_ID = "default"  # until multi-tenant
+
+
+def _fetch_events_with_recurrence(
+    session: Session,
+    start_date: dt.date,
+    end_date: dt.date,
+) -> tuple[list[ScheduleEvent], list[dict], list]:
+    """Return (stored_events, recurring_instances, combined_event_likes) for a date range.
+
+    stored_events      — one-time ScheduleEvent rows that fall within the range.
+    recurring_instances — expanded occurrence dicts for every recurring event.
+    combined_event_likes — list of objects (ScheduleEvent or SimpleNamespace) that
+                           expose .date/.start_time/.end_time/.participants for
+                           use by find_free_blocks helpers.
+    """
+    # One-time events in range
+    one_time_stmt = select(ScheduleEvent).where(
+        ScheduleEvent.date >= start_date,
+        ScheduleEvent.date <= end_date,
+        ScheduleEvent.recurrence_rule.is_(None),  # type: ignore[attr-defined]
+    )
+    stored = list(session.exec(one_time_stmt).all())
+
+    # All recurring event templates (started on or before end_date)
+    recurring_stmt = select(ScheduleEvent).where(
+        ScheduleEvent.date <= end_date,
+        ScheduleEvent.recurrence_rule.isnot(None),  # type: ignore[attr-defined]
+    )
+    recurring_templates = list(session.exec(recurring_stmt).all())
+
+    recurring_instances: list[dict] = []
+    for template in recurring_templates:
+        recurring_instances.extend(expand_recurrence(template, start_date, end_date))
+
+    combined_event_likes = list(stored) + [
+        instance_as_event_like(inst) for inst in recurring_instances
+    ]
+
+    return stored, recurring_instances, combined_event_likes
 
 
 @router.get("/today")
@@ -25,11 +65,12 @@ async def get_today(
 ):
     """All events for today with free block analysis."""
     today = dt.date.today()
-    stmt = select(ScheduleEvent).where(ScheduleEvent.date == today)
-    events = session.exec(stmt).all()
-    free = find_free_blocks(list(events), today)
+    stored, recurring_instances, event_likes = _fetch_events_with_recurrence(
+        session, today, today
+    )
+    free = find_free_blocks(event_likes, today)
     return {
-        "events": [e.model_dump(mode="json") for e in events],
+        "events": [e.model_dump(mode="json") for e in stored] + recurring_instances,
         "free_blocks": free,
     }
 
@@ -48,13 +89,12 @@ async def get_week(
         sd = today - dt.timedelta(days=today.weekday())  # Monday
 
     ed = sd + dt.timedelta(days=6)
-    stmt = select(ScheduleEvent).where(
-        ScheduleEvent.date >= sd, ScheduleEvent.date <= ed
+    stored, recurring_instances, event_likes = _fetch_events_with_recurrence(
+        session, sd, ed
     )
-    events = session.exec(stmt).all()
-    free = find_free_blocks_multi_day(list(events), sd, days=7)
+    free = find_free_blocks_multi_day(event_likes, sd, days=7)
     return {
-        "events": [e.model_dump(mode="json") for e in events],
+        "events": [e.model_dump(mode="json") for e in stored] + recurring_instances,
         "free_blocks": free,
     }
 
@@ -68,11 +108,8 @@ async def get_free_blocks(
     """Free time windows for next N days."""
     today = dt.date.today()
     end_date = today + dt.timedelta(days=days - 1)
-    stmt = select(ScheduleEvent).where(
-        ScheduleEvent.date >= today, ScheduleEvent.date <= end_date
-    )
-    events = session.exec(stmt).all()
-    return find_free_blocks_multi_day(list(events), today, days=days)
+    _, _, event_likes = _fetch_events_with_recurrence(session, today, end_date)
+    return find_free_blocks_multi_day(event_likes, today, days=days)
 
 
 @router.post("/events", status_code=201)
@@ -167,21 +204,26 @@ async def get_member_schedule(
         sd = today - dt.timedelta(days=today.weekday())
 
     ed = sd + dt.timedelta(days=6)
-    all_events = session.exec(
-        select(ScheduleEvent).where(
-            ScheduleEvent.date >= sd, ScheduleEvent.date <= ed
-        )
-    ).all()
+    stored, recurring_instances, event_likes = _fetch_events_with_recurrence(
+        session, sd, ed
+    )
 
-    # Filter to events where this member is assigned
-    member_events = [
-        e for e in all_events
-        if member_id in (e.assigned_member_ids or [])
+    # Filter stored events to this member
+    member_stored = [e for e in stored if member_id in (e.assigned_member_ids or [])]
+    # Filter recurring instances to this member
+    member_recurring = [
+        inst for inst in recurring_instances
+        if member_id in (inst.get("assigned_member_ids") or [])
+    ]
+    # Filter event_likes to this member for free-block calculation
+    member_event_likes = [
+        el for el in event_likes
+        if member_id in (el.assigned_member_ids or [])
     ]
 
-    free = find_free_blocks_multi_day(member_events, sd, days=7)
+    free = find_free_blocks_multi_day(member_event_likes, sd, days=7)
     return {
-        "events": [e.model_dump(mode="json") for e in member_events],
+        "events": [e.model_dump(mode="json") for e in member_stored] + member_recurring,
         "free_blocks": free,
     }
 

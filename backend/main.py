@@ -35,6 +35,7 @@ from api.todos import router as todos_router
 from api.achievements import router as achievements_router
 from api.dashboard import router as dashboard_router
 from api.notifications import router as notifications_router
+from api.backups import router as backups_router
 
 START_TIME = time.time()
 
@@ -173,6 +174,16 @@ async def _check_daily_goal_reminders():
 scheduler = AsyncIOScheduler()
 
 
+def _daily_backup():
+    """Create a daily database backup; called by APScheduler."""
+    from services.backup import create_backup
+    try:
+        result = create_backup()
+        logger.info("Daily backup created: %s (%d bytes)", result["filename"], result["size_bytes"])
+    except Exception:
+        logger.exception("Daily backup failed")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
@@ -180,9 +191,11 @@ async def lifespan(app: FastAPI):
     migrate_achievement_renewal_columns()
     scheduler.add_job(_auto_sync_all, "interval", minutes=60, id="google_calendar_sync")
     scheduler.add_job(_check_daily_goal_reminders, "interval", minutes=5, id="goal_reminders")
+    scheduler.add_job(_daily_backup, "cron", hour=3, minute=0, id="daily_db_backup")
     scheduler.start()
     logger.info("Google Calendar auto-sync scheduled (every 60 minutes)")
     logger.info("Daily goal reminder check scheduled (every 5 minutes)")
+    logger.info("Daily database backup scheduled (03:00 UTC)")
     yield
     scheduler.shutdown(wait=False)
 
@@ -202,6 +215,7 @@ tags_metadata = [
     {"name": "To-Dos", "description": "One-off to-do items with priority, due dates, and member assignment."},
     {"name": "Achievements", "description": "Per-member achievement cups with prize goals earned through chores and goals."},
     {"name": "Notifications", "description": "In-app notifications and configurable daily goal reminder scheduling."},
+    {"name": "Backups", "description": "Trigger manual database backups and list available snapshots."},
 ]
 
 app = FastAPI(
@@ -252,6 +266,7 @@ app.include_router(todos_router)
 app.include_router(achievements_router)
 app.include_router(dashboard_router)
 app.include_router(notifications_router)
+app.include_router(backups_router)
 
 
 @app.get("/api/v1/health")
